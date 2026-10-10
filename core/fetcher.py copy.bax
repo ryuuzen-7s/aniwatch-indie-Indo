@@ -1,0 +1,336 @@
+"""
+core/fetcher.py — HTTP client multi-source + multi-mirror fallback.
+Bisa dijalankan langsung: python -m core.fetcher
+"""
+import sys
+import time
+import random
+import logging
+from pathlib import Path
+from typing import Optional, Tuple
+
+# ═══════════════════════════════════════════════════════════
+#  PATH FIX — supaya bisa dijalankan langsung
+# ═══════════════════════════════════════════════════════════
+if __name__ == "__main__" and __package__ is None:
+    sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
+
+import requests
+from bs4 import BeautifulSoup
+from tenacity import (
+    retry, stop_after_attempt, wait_exponential,
+    retry_if_exception_type,
+)
+
+from config import settings
+
+
+logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════
+#  EXCEPTIONS
+# ═══════════════════════════════════════════════════════════
+class FetchError(Exception):
+    """Base fetch error."""
+    pass
+
+
+class AllMirrorsFailedError(FetchError):
+    """Semua mirror dari source gagal diakses."""
+    pass
+
+
+class UnknownSourceError(FetchError):
+    """Source tidak dikenal / disabled."""
+    pass
+
+
+# ═══════════════════════════════════════════════════════════
+#  BLOCK DETECTION
+# ═══════════════════════════════════════════════════════════
+BLOCK_KEYWORDS = [
+    "just a moment",
+    "checking your browser",
+    "cf-browser-verification",
+    "enable javascript and cookies",
+    "access denied",
+    "attention required",
+    "ddos-guard",
+]
+
+
+def is_blocked(html: str) -> bool:
+    """Cek apakah HTML menandakan blok / challenge."""
+    if not html or len(html) < 500:
+        return True
+    lower = html.lower()
+    return any(kw in lower for kw in BLOCK_KEYWORDS)
+
+
+# ═══════════════════════════════════════════════════════════
+#  MIRROR STATE PER SOURCE
+# ═══════════════════════════════════════════════════════════
+class SourceMirrorState:
+    """Track mirror yang gagal per source."""
+
+    def __init__(self):
+        self.failed: dict = {}  # {"otakudesu": {"https://...": ts}}
+
+    def mark_failed(self, source: str, url: str) -> None:
+        self.failed.setdefault(source, {})[url] = time.time()
+
+    def is_failed(self, source: str, url: str, cooldown: int = 300) -> bool:
+        ts = self.failed.get(source, {}).get(url)
+        if not ts:
+            return False
+        if time.time() - ts > cooldown:
+            del self.failed[source][url]
+            return False
+        return True
+
+    def ordered(self, source_name: str) -> list:
+        src = settings.get_source(source_name)
+        if not src:
+            return []
+        mirrors = src.all_mirrors
+        ok = [m for m in mirrors if not self.is_failed(source_name, m)]
+        return ok or mirrors
+
+
+mirror_state = SourceMirrorState()
+
+
+# ═══════════════════════════════════════════════════════════
+#  FETCH SINGLE (dengan retry)
+# ═══════════════════════════════════════════════════════════
+@retry(
+    stop=stop_after_attempt(settings.max_retry),
+    wait=wait_exponential(multiplier=settings.retry_backoff, min=1, max=10),
+    retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError)),
+    reraise=True,
+)
+def _fetch_single(url: str, headers: dict) -> requests.Response:
+    return requests.get(
+        url,
+        headers=headers,
+        timeout=settings.request_timeout,
+        allow_redirects=True,
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+#  PUBLIC: FETCH (multi-source)
+# ═══════════════════════════════════════════════════════════
+def fetch(
+    path: str,
+    source: Optional[str] = None,
+    parse: bool = True,
+    delay: bool = True,
+) -> Tuple[Optional[BeautifulSoup], str]:
+    """
+    Fetch path dari source tertentu.
+
+    Args:
+        path   : "/anime/xxx" atau URL lengkap
+        source : "otakudesu" | "kuramanime" | "animeindo"
+                 (default: settings.default_source)
+        parse  : True → return (soup, html)
+        delay  : kasih jeda rate limit
+
+    Returns:
+        (soup, html) jika parse=True, atau (None, html)
+
+    Raises:
+        UnknownSourceError, AllMirrorsFailedError
+    """
+    source = (source or settings.default_source).lower()
+    src = settings.get_source(source)
+
+    if not src:
+        raise UnknownSourceError(
+            f"Source '{source}' tidak dikenal. "
+            f"Tersedia: {list(settings.sources.keys())}"
+        )
+    if not src.enabled:
+        raise UnknownSourceError(f"Source '{source}' sedang disabled")
+    if not src.mirrors:
+        raise UnknownSourceError(f"Source '{source}' tidak punya mirror")
+
+    if delay:
+        time.sleep(random.uniform(0.5, settings.rate_limit_delay))
+
+    mirrors = mirror_state.ordered(source)
+    headers = settings.headers_for(source)
+    last_error: Optional[str] = None
+
+    for mirror in mirrors:
+        # Bangun URL lengkap
+        if path.startswith("http"):
+            full_url = path
+        else:
+            full_url = mirror + (path if path.startswith("/") else "/" + path)
+
+        logger.debug(f"[{source}] Fetching: {full_url}")
+
+        try:
+            resp = _fetch_single(full_url, headers)
+            logger.info(f"[{source}] [{resp.status_code}] {full_url}")
+
+            if resp.status_code >= 400:
+                logger.warning(f"[{source}] HTTP {resp.status_code} dari {mirror}")
+                mirror_state.mark_failed(source, mirror)
+                last_error = f"HTTP {resp.status_code}"
+                continue
+
+            if is_blocked(resp.text):
+                logger.warning(f"[{source}] Block terdeteksi dari {mirror}")
+                mirror_state.mark_failed(source, mirror)
+                last_error = "Blocked"
+                continue
+
+            # Sukses
+            if parse:
+                return BeautifulSoup(resp.text, "lxml"), resp.text
+            return None, resp.text
+
+        except requests.Timeout:
+            logger.warning(f"[{source}] Timeout dari {mirror}")
+            mirror_state.mark_failed(source, mirror)
+            last_error = "Timeout"
+        except requests.ConnectionError as e:
+            logger.warning(f"[{source}] Koneksi gagal ke {mirror}: {e}")
+            mirror_state.mark_failed(source, mirror)
+            last_error = str(e)
+        except Exception as e:
+            logger.error(f"[{source}] Error: {type(e).__name__}: {e}")
+            mirror_state.mark_failed(source, mirror)
+            last_error = f"{type(e).__name__}: {e}"
+
+    raise AllMirrorsFailedError(
+        f"[{source}] Semua {len(mirrors)} mirror gagal. "
+        f"Error terakhir: {last_error}"
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+#  FETCH RAW (untuk link eksternal, tanpa fallback)
+# ═══════════════════════════════════════════════════════════
+def fetch_raw(
+    url: str,
+    timeout: Optional[int] = None,
+    stream: bool = True,
+    source: Optional[str] = None,
+) -> requests.Response:
+    """
+    Fetch URL langsung tanpa fallback mirror (untuk link eksternal).
+    Referer bisa disesuaikan dengan source.
+    """
+    headers = settings.headers_for(source) if source else settings.headers.copy()
+    return requests.get(
+        url,
+        headers=headers,
+        timeout=timeout or settings.request_timeout,
+        allow_redirects=True,
+        stream=stream,
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+#  HEALTH CHECK
+# ═══════════════════════════════════════════════════════════
+def check_source(source_name: str) -> dict:
+    """Cek status semua mirror dari satu source."""
+    src = settings.get_source(source_name)
+    if not src:
+        return {"name": source_name, "error": "Unknown source", "mirrors": {}}
+
+    result = {"name": source_name, "mirrors": {}}
+    headers = settings.headers_for(source_name)
+
+    for mirror in src.all_mirrors:
+        t0 = time.time()
+        try:
+            r = requests.get(
+                mirror,
+                headers=headers,
+                timeout=8,
+                allow_redirects=True,
+            )
+            latency = int((time.time() - t0) * 1000)
+            result["mirrors"][mirror] = {
+                "alive": r.status_code == 200 and not is_blocked(r.text),
+                "status": r.status_code,
+                "latency_ms": latency,
+            }
+        except Exception as e:
+            result["mirrors"][mirror] = {
+                "alive": False,
+                "status": 0,
+                "latency_ms": 0,
+                "error": str(e)[:60],
+            }
+
+    return result
+
+
+def check_all_sources() -> dict:
+    """Cek semua source & mirror."""
+    return {name: check_source(name) for name in settings.sources.keys()}
+
+
+# ═══════════════════════════════════════════════════════════
+#  QUICK TEST
+# ═══════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+    print("=" * 62)
+    print("  CHECK ALL SOURCES & MIRRORS")
+    print("=" * 62)
+
+    if not settings.sources:
+        print("\n  ⚠️  Tidak ada source terdeteksi di .env")
+        print("     Pastikan .env ada dan berisi minimal:")
+        print("       OTAKUDESU_ENABLED=true")
+        print("       OTAKUDESU_MIRROR_1=https://otakudesu.blog")
+        sys.exit(1)
+
+    results = check_all_sources()
+    for name, r in results.items():
+        print(f"\n  [{name.upper()}]")
+        if "error" in r:
+            print(f"    ❌ {r['error']}")
+            continue
+        if not r["mirrors"]:
+            print(f"    ⚠️  Tidak ada mirror")
+            continue
+        for mirror, m in r["mirrors"].items():
+            icon = "✅" if m["alive"] else "❌"
+            latency = f"{m['latency_ms']}ms" if m["latency_ms"] else "-"
+            err = f" ({m.get('error', '')})" if m.get("error") else ""
+            print(f"    {icon} [{m['status']:>3}] {latency:>7}  {mirror}{err}")
+
+    print("\n" + "=" * 62)
+    print("  TEST FETCH PER SOURCE")
+    print("=" * 62)
+
+    for source in settings.active_sources.keys():
+        print(f"\n  [{source.upper()}] /anime/yowaki-max-sub-indo")
+        try:
+            soup, html = fetch("/anime/yowaki-max-sub-indo", source=source)
+            h1 = soup.find("h1") if soup else None
+            title = h1.get_text(strip=True) if h1 else "-"
+            print(f"    ✅ {len(html):,} chars | {title[:50]}")
+        except AllMirrorsFailedError as e:
+            print(f"    ❌ {str(e)[:100]}")
+        except UnknownSourceError as e:
+            print(f"    ⚠️  {e}")
+        except Exception as e:
+            print(f"    ❌ {type(e).__name__}: {str(e)[:80]}")
+
+    print()

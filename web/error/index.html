@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error — Query</title>
+<link rel="stylesheet" href="/portal/assets/style.css">
+<style>
+  .error-page {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  .error-header {
+    text-align: center;
+    padding: 30px 20px;
+    margin-bottom: 24px;
+  }
+
+  .error-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    display: block;
+    animation: shake 0.6s var(--ease);
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .error-header h1 {
+    font-size: 32px;
+    background: var(--grad-error);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .error-header .subtitle {
+    color: var(--text-2);
+    font-size: 14px;
+  }
+
+  /* Code block error */
+  .code-block-error {
+    background: var(--bg);
+    border: 1px solid var(--error);
+    border-left: 4px solid var(--error);
+    border-radius: 10px;
+    padding: 20px;
+    font-family: "SF Mono", "Consolas", "Monaco", monospace;
+    font-size: 13px;
+    color: var(--error);
+    line-height: 1.7;
+    margin: 20px 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    position: relative;
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.15);
+  }
+
+  .code-block-error::before {
+    content: "● ERROR";
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--error);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  .code-block-error .line {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .code-block-error .key {
+    color: var(--muted);
+    display: inline-block;
+    min-width: 100px;
+  }
+
+  .code-block-error .value {
+    color: var(--error);
+  }
+
+  /* Response info */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .info-box-mini {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .info-box-mini .label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .info-box-mini .value {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 600;
+    font-family: "SF Mono", "Consolas", monospace;
+    word-break: break-all;
+  }
+
+  .info-box-mini .value.error {
+    color: var(--error);
+  }
+
+  .info-box-mini .value.success {
+    color: var(--success);
+  }
+
+  /* Actions */
+  .error-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .error-actions a,
+  .error-actions button {
+    flex: 1;
+    min-width: 140px;
+    text-decoration: none;
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s var(--ease);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .btn-retry {
+    background: var(--grad-error);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .btn-retry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* Details toggle */
+  .details-toggle {
+    display: inline-block;
+    margin: 16px 0;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .details-toggle:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .details-pre {
+    display: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 12px 0;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 11px;
+    color: var(--text-2);
+    overflow-x: auto;
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .details-pre.show {
+    display: block;
+  }
+
+  .footer-mini {
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-mini .org {
+    color: var(--accent);
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="error-page">
+
+  <!-- Header -->
+  <div class="error-header">
+    <span class="error-icon">❌</span>
+    <h1>Query Error</h1>
+    <p class="subtitle">Terjadi kesalahan saat memproses query</p>
+  </div>
+
+  <!-- Main info -->
+  <div class="panel">
+    <h2>🔍 Detail Error</h2>
+
+    <!-- Code block -->
+    <div class="code-block-error" id="error-code">
+      <span class="line"><span class="key">code</span>: <span class="value" id="err-code">-</span></span>
+      <span class="line"><span class="key">message</span>: <span class="value" id="err-message">-</span></span>
+      <span class="line"><span class="key">status</span>: <span class="value" id="err-status">-</span></span>
+    </div>
+
+    <!-- Info grid -->
+    <div class="info-grid">
+      <div class="info-box-mini">
+        <div class="label">Endpoint</div>
+        <div class="value" id="info-endpoint">-</div>
+      </div>
+      <div class="info-box-mini">
+        <div class="label">Method</div>
+        <div class="value" id="info-method">-</div>
+      </div>
+      <div class="info-box-mini">
+        <div class="label">Query</div>
+        <div class="value" id="info-query">-</div>
+      </div>
+      <div class="info-box-mini">
+        <div class="label">Timestamp</div>
+        <div class="value" id="info-timestamp">-</div>
+      </div>
+    </div>
+
+    <!-- Details toggle -->
+    <button class="details-toggle" onclick="toggleDetails()">
+      ▼ Lihat detail lengkap
+    </button>
+    <pre class="details-pre" id="details-pre">-</pre>
+
+    <!-- Actions -->
+    <div class="error-actions">
+      <button class="btn-retry" onclick="retry()">
+        🔄 Coba Lagi
+      </button>
+      <a class="btn-secondary" href="/portal/index.html">
+        🏠 Ke Beranda
+      </a>
+      <a class="btn-secondary" href="/docs" target="_blank">
+        📚 Docs
+      </a>
+    </div>
+
+    <!-- Hint -->
+    <div style="margin-top: 20px; padding: 14px; background: rgba(91, 141, 239, 0.08); border: 1px solid rgba(91, 141, 239, 0.4); border-radius: 10px; font-size: 12px; color: var(--accent-2);">
+      💡 <b>Tips:</b> Cek koneksi backend, atau buka <code>/health</code> untuk cek status server.
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-mini">
+    <div class="org">Anicorporation.img</div>
+    <div>©2026 — Error Page v1.0</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  PARSE URL PARAMS
+// ═══════════════════════════════════════════════════════════
+function getParam(name, fallback = "-") {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name) || fallback;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FILL DATA
+// ═══════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", () => {
+  // Error data
+  const code = getParam("code", "UNKNOWN_ERROR");
+  const message = getParam("message", "Tidak ada pesan error");
+  const status = getParam("status", "500");
+  const endpoint = getParam("endpoint", "-");
+  const method = getParam("method", "GET");
+  const query = getParam("q", "-");
+  const timestamp = getParam("ts", new Date().toISOString());
+  const details = getParam("details", "");
+
+  // Fill DOM
+  document.getElementById("err-code").textContent = code;
+  document.getElementById("err-message").textContent = decodeURIComponent(message);
+  document.getElementById("err-status").textContent = status;
+
+  document.getElementById("info-endpoint").textContent = endpoint;
+  document.getElementById("info-method").textContent = method;
+  document.getElementById("info-query").textContent = query;
+  document.getElementById("info-timestamp").textContent = timestamp;
+
+  // Details
+  const detailsPre = document.getElementById("details-pre");
+  if (details) {
+    try {
+      detailsPre.textContent = JSON.stringify(JSON.parse(decodeURIComponent(details)), null, 2);
+    } catch {
+      detailsPre.textContent = decodeURIComponent(details);
+    }
+  } else {
+    detailsPre.textContent = "Tidak ada detail tambahan.";
+  }
+
+  // Title update
+  document.title = `Error ${status} — ${code}`;
+
+  // Console log
+  console.error("[Error Page]", { code, message, status, endpoint, method, query });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════════
+function toggleDetails() {
+  const el = document.getElementById("details-pre");
+  const btn = document.querySelector(".details-toggle");
+  el.classList.toggle("show");
+  btn.textContent = el.classList.contains("show")
+    ? "▲ Sembunyikan detail"
+    : "▼ Lihat detail lengkap";
+}
+
+function retry() {
+  const endpoint = getParam("endpoint", "/");
+  const query = getParam("q", "");
+
+  let url = endpoint;
+  if (query && query !== "-") {
+    url += `?q=${encodeURIComponent(query)}`;
+  }
+
+  console.log("[Retry]", url);
+  window.location.href = url;
+}
+</script>
+</body>
+</html>

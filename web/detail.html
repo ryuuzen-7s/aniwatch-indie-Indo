@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detail API Key — AniWatch API</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .key-display {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+    border: 2px solid var(--success);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+  }
+  .key-display .key-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .key-display .key-value {
+    font-family: "Consolas", monospace;
+    font-size: 14px;
+    word-break: break-all;
+    color: var(--success);
+    font-weight: 600;
+    padding-right: 100px;
+  }
+  .key-display .key-actions {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 6px;
+  }
+  .key-display .key-actions button {
+    padding: 6px 10px;
+    font-size: 11px;
+    background: var(--success);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .key-display .key-actions button:hover {
+    background: #16a34a;
+  }
+
+  /* Detail grid */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .detail-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .detail-item .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .detail-item .value {
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .detail-item .value.mono {
+    font-family: "Consolas", monospace;
+    font-size: 12px;
+  }
+  .detail-item .value.success { color: var(--success); }
+  .detail-item .value.warn { color: var(--warn); }
+  .detail-item .value.error { color: var(--error); }
+
+  /* Action buttons */
+  .detail-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .detail-actions button {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  /* Status badge besar */
+  .status-badge-large {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .status-badge-large.active {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+  }
+  .status-badge-large.revoked {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
+  }
+  .status-badge-large.expired {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--warn);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🔍 Detail API Key</h1>
+    <p id="subtitle">Loading...</p>
+    <div class="nav">
+      <a href="index.html">🏠 Beranda</a>
+      <a href="dashboard.html">📊 Dashboard</a>
+      <a href="detail.html" class="active">🔍 Detail</a>
+      <a href="#" id="btn-logout">🚪 Logout</a>
+      <a href="license.html">📄 Lisensi</a>
+    </div>
+  </div>
+
+  <!-- Detail content -->
+  <div class="panel" id="detail-panel">
+    <div class="empty">
+      <div class="icon">⏳</div>
+      <p>Loading detail key...</p>
+    </div>
+  </div>
+</div>
+
+<script src="assets/api.js"></script>
+<script src="assets/app.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DETAIL PAGE LOGIC
+// ═══════════════════════════════════════════════════════════
+
+// ═══ 1. Cek auth ═══
+(function checkAuth() {
+  const user = JSON.parse(localStorage.getItem("aniwatch_user") || "null");
+  if (!user) {
+    window.location.href = "login.html";
+  }
+})();
+
+// ═══ 2. Ambil key ID dari URL ═══
+function getKeyIdFromURL() {
+  // Dari query string
+  const params = new URLSearchParams(window.location.search);
+  const idFromQuery = params.get("id");
+  if (idFromQuery) return parseInt(idFromQuery);
+
+  // Dari localStorage
+  const idFromStorage = localStorage.getItem("aniwatch_selected_key_id");
+  if (idFromStorage) return parseInt(idFromStorage);
+
+  return null;
+}
+
+// ═══ 3. Load detail ═══
+async function loadDetail() {
+  const keyId = getKeyIdFromURL();
+  const panel = document.getElementById("detail-panel");
+  const subtitle = document.getElementById("subtitle");
+
+  if (!keyId) {
+    panel.innerHTML = `
+      <div class="empty">
+        <div class="icon">❌</div>
+        <p>ID key tidak valid. Kembali ke <a href="dashboard.html">dashboard</a>.</p>
+      </div>`;
+    subtitle.textContent = "ID tidak ditemukan";
+    return;
+  }
+
+  subtitle.textContent = `Key ID: #${keyId}`;
+
+  // Coba dari cache dulu
+  let keysCache = [];
+  try {
+    keysCache = JSON.parse(localStorage.getItem("aniwatch_keys_cache") || "[]");
+  } catch (e) { keysCache = []; }
+
+  let key = keysCache.find((k) => k.id === keyId);
+
+  // Kalau tidak ada di cache, fetch ulang
+  if (!key) {
+    console.log("Cache miss, reload dari server...");
+    const apiKey = localStorage.getItem("aniwatch_api_key");
+    try {
+      const data = await API.listKeys(apiKey);
+      if (data.success && data.data) {
+        localStorage.setItem("aniwatch_keys_cache", JSON.stringify(data.data));
+        key = data.data.find((k) => k.id === keyId);
+      }
+    } catch (e) {
+      console.error("Fetch error:", e);
+    }
+  }
+
+  if (!key) {
+    panel.innerHTML = `
+      <div class="empty">
+        <div class="icon">⚠️</div>
+        <p>Key #${keyId} tidak ditemukan.</p>
+        <a href="dashboard.html" style="color:var(--accent);">← Kembali ke Dashboard</a>
+      </div>`;
+    return;
+  }
+
+  // Render detail
+  renderDetail(key);
+}
+
+// ═══ 4. Render detail ═══
+function renderDetail(key) {
+  const panel = document.getElementById("detail-panel");
+
+  // ═══ Cek apakah kita punya key lengkap di localStorage ═══
+  const fullKeyStored = localStorage.getItem("aniwatch_api_key");
+  const isFullKeyAvailable = fullKeyStored && fullKeyStored.startsWith(key.key_prefix);
+
+  // Status
+  let statusClass = "active";
+  let statusText = "Active";
+  if (!key.is_active) {
+    statusClass = "revoked";
+    statusText = "Revoked";
+  } else if (key.expires_at && new Date(key.expires_at) < new Date()) {
+    statusClass = "expired";
+    statusText = "Expired";
+  }
+
+  // ═══ Tentukan display key ═══
+  const displayKey = isFullKeyAvailable ? fullKeyStored : `${key.key_prefix}...••••••••`;
+  const keyLabel = isFullKeyAvailable ? "🔐 API KEY (FULL)" : "🔐 API KEY PREFIX";
+  const copyTarget = isFullKeyAvailable ? fullKeyStored : key.key_prefix;
+
+  const html = `
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+      <div>
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+          🔑 ${key.name || "(no name)"}
+        </h2>
+      </div>
+      <div>
+        <span class="status-badge-large ${statusClass}">
+          ${statusClass === "active" ? "✅" : statusClass === "revoked" ? "🚫" : "⏰"}
+          ${statusText}
+        </span>
+      </div>
+    </div>
+
+    <!-- Key display -->
+    <div class="key-display" style="${isFullKeyAvailable ? 'border-color: var(--success);' : 'border-color: var(--warn);'}">
+      <div class="key-label">
+        ${keyLabel}
+        ${!isFullKeyAvailable ? '<span style="color: var(--warn); margin-left: 8px;">⚠️ KEY LENGKAP TIDAK TERSEDIA</span>' : ''}
+      </div>
+      <div class="key-value" style="color: ${isFullKeyAvailable ? 'var(--success)' : 'var(--warn)'};">
+        ${displayKey}
+      </div>
+      <div class="key-actions">
+        <button onclick="copyKey('${copyTarget.replace(/'/g, "\\'")}', ${isFullKeyAvailable})" 
+                title="${isFullKeyAvailable ? 'Copy full key' : 'Copy prefix'}">
+          📋 Copy ${isFullKeyAvailable ? "Full" : "Prefix"}
+        </button>
+      </div>
+      ${!isFullKeyAvailable ? `
+        <div style="margin-top: 12px; padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 6px; font-size: 12px; color: var(--warn);">
+          💡 <b>Info:</b> Key lengkap hanya ditampilkan <b>1×</b> saat dibuat. 
+          Karena Anda tidak menyimpannya, key lengkap <b>tidak bisa di-recover</b>.
+          Kalau lupa, <b>revoke key ini</b> dan <b>buat key baru</b>.
+        </div>
+      ` : `
+        <div style="margin-top: 12px; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 6px; font-size: 12px; color: var(--success);">
+          ✅ <b>Key lengkap tersedia</b> — Anda bisa copy dan pakai.
+        </div>
+      `}
+    </div>
+
+    <!-- Detail info -->
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="label">ID</div>
+        <div class="value mono">#${key.id}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Role</div>
+        <div class="value">${key.role || "user"}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Rate Limit</div>
+        <div class="value">${key.rate_limit} req/menit</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Total Requests</div>
+        <div class="value">${key.request_count || 0}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Dibuat</div>
+        <div class="value mono">${formatDate(key.created_at)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Terakhir Dipakai</div>
+        <div class="value mono">${key.last_used ? formatDate(key.last_used) : "-"}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Expired</div>
+        <div class="value mono ${statusClass === "expired" ? "error" : ""}">
+          ${key.expires_at ? formatDate(key.expires_at) : "∞ (tidak ada)"}
+        </div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Sisa Waktu</div>
+        <div class="value ${statusClass === "expired" ? "error" : "success"}">
+          ${key.expires_at ? timeUntil(key.expires_at) : "∞"}
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="detail-actions">
+      <a href="dashboard.html" style="text-decoration: none; flex: 1;">
+        <button class="secondary" style="width: 100%;">
+          ← Kembali ke Dashboard
+        </button>
+      </a>
+      ${key.is_active ? `
+        <button class="danger" onclick="revokeSelected(${key.id})">
+          🗑️ Revoke Key
+        </button>
+      ` : `
+        <button class="secondary" disabled>
+          🚫 Sudah Direvoke
+        </button>
+      `}
+    </div>
+  `;
+
+  panel.innerHTML = html;
+}
+
+
+
+// ═══ 5. Copy prefix ═══
+async function copyKey(text, isFull) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const label = isFull ? "🔑 Key lengkap" : "📌 Prefix";
+    alert(`✅ ${label} dicopy:\n\n${text}`);
+  } catch (e) {
+    // Fallback: textarea copy
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      alert("✅ Dicopy (fallback)");
+    } catch (err) {
+      alert("❌ Gagal copy: " + err.message);
+    }
+  }
+}
+window.copyKey = copyKey;
+
+// ═══ 6. Revoke selected ═══
+async function revokeSelected(keyId) {
+  if (!confirm(`Yakin revoke key #${keyId}?`)) return;
+
+  const apiKey = localStorage.getItem("aniwatch_api_key");
+
+  try {
+    const data = await API.revokeKey(keyId, apiKey);
+    if (!data.success) {
+      throw new Error(data.error?.message || "Gagal revoke");
+    }
+
+    alert("✅ Key berhasil direvoke");
+    // Reload detail
+    loadDetail();
+
+  } catch (err) {
+    alert("❌ " + err.message);
+  }
+}
+window.revokeSelected = revokeSelected;
+
+// ═══ 7. Logout ═══
+function logout(e) {
+  if (e) e.preventDefault();
+  if (!confirm("Logout dari akun ini?")) return;
+
+  localStorage.removeItem("aniwatch_user");
+  localStorage.removeItem("aniwatch_api_key");
+  localStorage.removeItem("aniwatch_token");
+  localStorage.removeItem("aniwatch_keys_cache");
+  localStorage.removeItem("aniwatch_selected_key_id");
+
+  window.location.href = "index.html";
+}
+
+// ═══ 8. Init ═══
+document.addEventListener("DOMContentLoaded", () => {
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) btnLogout.addEventListener("click", logout);
+
+  loadDetail();
+
+  console.log("🔍 Detail page loaded");
+});
+</script>
+</body>
+</html>

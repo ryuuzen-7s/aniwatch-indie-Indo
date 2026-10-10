@@ -1,0 +1,105 @@
+# ═══════════════════════════════════════════════════════════
+#  ANIWATCH — GITIGNORE
+# ═══════════════════════════════════════════════════════════
+
+# ─── Environment (JANGAN di-commit) ───
+.env
+.env.local
+.env.*.local
+*.env
+
+# ─── Database (JANGAN di-commit — besar & berisi data) ───
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/db/
+data/cache/
+
+# ─── Logs ───
+*.log
+logs/
+data/log/
+agent/logs/
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ─── Virtual Environment ───
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# ─── PyTest ───
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# ─── IDE ───
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# ─── OS ───
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ─── Project Specific ───
+data/base/dump/
+data/base/slugs/
+data/debug/
+debug_output/
+tmp/
+bin/
+backup/
+
+# ─── ZROK ───
+.zrok/
+
+# ─── Frontend (node_modules kalau ada) ───
+node_modules/
+package-lock.json
+
+# ─── Cache files ───
+.cache/
+*.cache
+
+# ─── Test outputs ───
+test/fixtures/*.html
+!test/fixtures/sample_anime.json
+# ─── Tunnel Tools ───
+zrok.exe

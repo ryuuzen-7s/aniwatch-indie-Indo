@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MD — Documentation</title>
+<link rel="stylesheet" href="/portal/assets/style.css">
+<style>
+  .md-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .md-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-decoration: none;
+    transition: all 0.2s var(--ease);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .md-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--grad-primary);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .md-card:hover {
+    border-color: var(--accent);
+    transform: translateX(4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .md-card:hover::before {
+    opacity: 1;
+  }
+
+  .md-card .doc-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .md-card .doc-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .md-card .doc-name {
+    color: var(--text);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+    font-family: "SF Mono", "Consolas", monospace;
+    word-break: break-all;
+  }
+
+  .md-card .doc-desc {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .md-card .doc-meta {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--accent-2);
+    background: rgba(91, 141, 239, 0.15);
+    border: 1px solid rgba(91, 141, 239, 0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .md-card .arrow {
+    color: var(--muted);
+    font-size: 18px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .md-card:hover .arrow {
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  .md-header {
+    text-align: center;
+    padding: 24px 16px;
+    margin-bottom: 20px;
+  }
+
+  .md-header h1 {
+    font-size: 28px;
+    background: var(--grad-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .md-header p {
+    color: var(--text-2);
+    font-size: 13px;
+  }
+
+  .md-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .md-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .md-stats .num {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 16px;
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+
+  .info-box {
+    background: rgba(91, 141, 239, 0.08);
+    border: 1px solid rgba(91, 141, 239, 0.4);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 13px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    color: var(--accent-2);
+  }
+
+  .info-box .icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>📁 MD — Documentation</h1>
+    <p>Semua file markdown AniWatch</p>
+    <div class="nav">
+      <a href="/portal/index.html">🏠 Beranda</a>
+      <a href="/portal/login.html">🔓 Login</a>
+      <a href="/portal/dashboard.html">📊 Dashboard</a>
+      <a href="/portal/license.html">📜 License</a>
+      <a href="/md/" class="active">📁 MD</a>
+      <a href="/docs" target="_blank">📚 Docs</a>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="md-header">
+    <h1>Documentation Hub</h1>
+    <p>Klik untuk buka / download file markdown</p>
+    <div class="md-stats">
+      <div class="stat">
+        <span class="num" id="stat-count">-</span>
+        <span>files</span>
+      </div>
+      <div class="stat">
+        <span class="num">Anicorporation.img</span>
+        <span>©2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="info-box">
+    <span class="icon">💡</span>
+    <div>
+      File di folder ini adalah dokumentasi resmi project. Klik untuk buka di tab baru
+      (browser akan tampilkan markdown sebagai plain text), atau <b>klik kanan → Save as</b>
+      untuk download.
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="panel">
+    <h2>📄 Available Documents</h2>
+    <div class="md-grid" id="md-grid">
+      <!-- Akan diisi via JS -->
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="copyright-footer" style="text-align:center;padding:24px 16px;border-top:1px solid var(--border);margin-top:32px;font-size:12px;color:var(--muted);">
+    <div style="color:var(--accent);font-weight:700;font-size:14px;">Anicorporation.img</div>
+    <div>Project: AniWatch</div>
+    <div>Developer: <strong>Anikuze Ryuuzen</strong></div>
+    <div style="font-family:monospace;margin-top:6px;">©2026 — All Rights Reserved</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DAFTAR FILE MD
+// ═══════════════════════════════════════════════════════════
+const FILES = [
+  {
+    name: "usage.md",
+    desc: "Panduan lengkap API dalam JavaScript (Fetch, Axios, Node.js)",
+    icon: "📘",
+    tag: "Guide",
+    size: "~15 KB"
+  },
+  {
+    name: "identity.md",
+    desc: "Identitas project AniWatch & organisasi Anicorporation.img",
+    icon: "🎌",
+    tag: "Info",
+    size: "~8 KB"
+  },
+  {
+    name: "LICENSE.md",
+    desc: "Lisensi resmi Anicorporation.img License v1.0",
+    icon: "📜",
+    tag: "Legal",
+    size: "~6 KB"
+  },
+  {
+    name: "copyright.md",
+    desc: "Copyright digital + serah terima organisasi + saksi",
+    icon: "©️",
+    tag: "Legal",
+    size: "~10 KB"
+  },
+  {
+    name: "information.md",
+    desc: "Info teknis, status overwrite, endpoint lengkap",
+    icon: "📖",
+    tag: "Info",
+    size: "~12 KB"
+  },
+  {
+    name: "CHANGELOG.md",
+    desc: "Riwayat perubahan project per versi",
+    icon: "📝",
+    tag: "Log",
+    size: "~8 KB"
+  },
+  {
+    name: "note.md",
+    desc: "Command reference cepat untuk development",
+    icon: "📋",
+    tag: "Ref",
+    size: "~4 KB"
+  }
+];
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER GRID
+// ═══════════════════════════════════════════════════════════
+function renderGrid() {
+  const grid = document.getElementById("md-grid");
+
+  grid.innerHTML = FILES.map((f) => `
+    <a class="md-card" href="/md/${f.name}" target="_blank" download>
+      <span class="doc-icon">${f.icon}</span>
+      <div class="doc-info">
+        <div class="doc-name">${f.name}</div>
+        <div class="doc-desc">${f.desc}</div>
+        <span class="doc-meta">${f.tag} · ${f.size}</span>
+      </div>
+      <span class="arrow">→</span>
+    </a>
+  `).join("");
+
+  document.getElementById("stat-count").textContent = FILES.length;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", () => {
+  renderGrid();
+  console.log("📁 MD Hub loaded. Files:", FILES.length);
+});
+</script>
+
+</body>
+</html>

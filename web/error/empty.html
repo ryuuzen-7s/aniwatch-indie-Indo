@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hasil Kosong</title>
+<link rel="stylesheet" href="/portal/assets/style.css">
+<style>
+  .empty-page {
+    max-width: 720px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  .empty-header {
+    text-align: center;
+    padding: 30px 20px;
+    margin-bottom: 24px;
+  }
+
+  .empty-icon {
+    font-size: 72px;
+    margin-bottom: 16px;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .empty-header h1 {
+    font-size: 30px;
+    background: linear-gradient(135deg, #ffbd2e, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .empty-header .subtitle {
+    color: var(--text-2);
+    font-size: 14px;
+  }
+
+  .query-badge {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 8px 18px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid var(--warn);
+    border-radius: 10px;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 13px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+
+  .query-badge .label {
+    color: var(--muted);
+    font-weight: 400;
+    margin-right: 6px;
+  }
+
+  /* Agent trigger panel */
+  .agent-panel {
+    background: linear-gradient(135deg, rgba(91, 141, 239, 0.08), rgba(168, 85, 247, 0.08));
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .agent-panel::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--grad-primary);
+  }
+
+  .agent-panel h2 {
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .agent-panel h2 .badge {
+    background: var(--grad-primary);
+    color: white;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: auto;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(91, 141, 239, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(91, 141, 239, 0); }
+  }
+
+  .agent-panel p {
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .agent-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-agent {
+    flex: 1;
+    min-width: 180px;
+    padding: 14px 20px;
+    background: var(--grad-primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s var(--ease);
+    box-shadow: 0 4px 12px rgba(91, 141, 239, 0.3);
+    font-family: inherit;
+  }
+
+  .btn-agent:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(91, 141, 239, 0.5);
+  }
+
+  .btn-agent:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-agent.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    box-shadow: none;
+  }
+
+  .btn-agent.secondary:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* Status log */
+  .status-log {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 16px;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.7;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .status-log.show {
+    display: block;
+  }
+
+  .status-log .line {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .status-log .ts {
+    color: var(--muted);
+    margin-right: 8px;
+  }
+
+  .status-log .ok {
+    color: var(--success);
+  }
+
+  .status-log .err {
+    color: var(--error);
+  }
+
+  .status-log .info {
+    color: var(--accent);
+  }
+
+  /* Suggestions */
+  .suggestions {
+    margin-top: 20px;
+  }
+
+  .suggestions h3 {
+    font-size: 14px;
+    color: var(--text-2);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .suggestion-list {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+  }
+
+  .suggestion-item {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    transition: all 0.2s;
+  }
+
+  .suggestion-item:hover {
+    border-color: var(--accent);
+    background: rgba(91, 141, 239, 0.05);
+  }
+
+  .suggestion-item .icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* Actions footer */
+  .empty-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .empty-actions a,
+  .empty-actions button {
+    flex: 1;
+    min-width: 140px;
+    text-decoration: none;
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s var(--ease);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .footer-mini {
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-mini .org {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+<div class="empty-page">
+
+  <!-- Header -->
+  <div class="empty-header">
+    <span class="empty-icon">🔍</span>
+    <h1>Hasil Tidak Ditemukan</h1>
+    <p class="subtitle">Kata kunci tidak ada di database</p>
+    <div class="query-badge">
+      <span class="label">query:</span>
+      <span id="query-value">-</span>
+    </div>
+  </div>
+
+  <!-- Agent trigger -->
+  <div class="agent-panel">
+    <h2>
+      🤖 Trigger Agent Scraper
+      <span class="badge">Auto Fix</span>
+    </h2>
+    <p>
+      Data <b>tidak ada di database</b>. Klik tombol di bawah untuk memicu
+      <b>agent scraper</b> yang akan mencari anime ini dari sumber (Otakudesu)
+      dan menyimpannya ke database.
+    </p>
+
+    <div class="agent-actions">
+      <button class="btn-agent" id="btn-scrape" onclick="triggerScrape()">
+        ⚡ Scrape Sekarang
+      </button>
+      <button class="btn-agent secondary" id="btn-scrape-all" onclick="triggerScrapeAll()">
+        📚 Scrape Semua Episode
+      </button>
+    </div>
+
+    <!-- Status log -->
+    <div class="status-log" id="status-log"></div>
+  </div>
+
+  <!-- Suggestions -->
+  <div class="panel suggestions">
+    <h3>💡 Saran</h3>
+    <ul class="suggestion-list">
+      <li class="suggestion-item">
+        <span class="icon">🔎</span>
+        <span>Cek ejaan kata kunci — coba dengan nama alternatif (romaji/english)</span>
+      </li>
+      <li class="suggestion-item">
+        <span class="icon">📝</span>
+        <span>Coba kata kunci lebih pendek (mis. <code>naruto</code> bukan <code>naruto shippuden s2</code>)</span>
+      </li>
+      <li class="suggestion-item">
+        <span class="icon">🤖</span>
+        <span>Klik <b>Scrape Sekarang</b> di atas untuk cari dari sumber</span>
+      </li>
+      <li class="suggestion-item">
+        <span class="icon">🌐</span>
+        <span>Buka <a href="https://otakudesu.blog" target="_blank" style="color:var(--accent);">Otakudesu</a> langsung untuk verifikasi</span>
+      </li>
+    </ul>
+
+    <!-- Actions -->
+    <div class="empty-actions">
+      <a class="btn-secondary" href="/portal/index.html">
+        🏠 Ke Beranda
+      </a>
+      <a class="btn-secondary" href="/share/now" target="_blank">
+        📺 Anime Ongoing
+      </a>
+      <a class="btn-secondary" href="/docs" target="_blank">
+        📚 Docs
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-mini">
+    <div class="org">Anicorporation.img</div>
+    <div>©2026 — Empty Page v1.0</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
+const API_BASE = window.location.origin;
+
+// ═══════════════════════════════════════════════════════════
+//  PARSE URL PARAMS
+// ═══════════════════════════════════════════════════════════
+function getParam(name, fallback = "-") {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name) || fallback;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOG HELPER
+// ═══════════════════════════════════════════════════════════
+function logLine(type, message) {
+  const log = document.getElementById("status-log");
+  log.classList.add("show");
+
+  const ts = new Date().toLocaleTimeString("id-ID");
+  const line = document.createElement("div");
+  line.className = "line";
+  line.innerHTML = `<span class="ts">[${ts}]</span><span class="${type}">${message}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FILL DATA
+// ═══════════════════════════════════════════════════════════
+let currentQuery = "-";
+
+document.addEventListener("DOMContentLoaded", () => {
+  currentQuery = getParam("q", "-");
+  document.getElementById("query-value").textContent = currentQuery;
+
+  console.log("[Empty Page] Query:", currentQuery);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  AGENT SCRAPER TRIGGER
+// ═══════════════════════════════════════════════════════════
+async function triggerScrape() {
+  if (currentQuery === "-") {
+    logLine("err", "Query kosong, tidak bisa scrape");
+    return;
+  }
+
+  const btn = document.getElementById("btn-scrape");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Scraping...';
+
+  logLine("info", `Mulai scrape untuk query: "${currentQuery}"`);
+
+  try {
+    // Step 1: Search untuk dapat slug
+    logLine("info", `Mencari slug untuk "${currentQuery}"...`);
+
+    const searchRes = await fetch(
+      `${API_BASE}/share/query?q=${encodeURIComponent(currentQuery)}&live=true&limit=1`
+    );
+    const searchData = await searchRes.json();
+
+    if (!searchData.success) {
+      throw new Error(searchData.error.message);
+    }
+
+    const results = searchData.data.results || [];
+    if (results.length === 0) {
+      logLine("err", `Tidak ada hasil untuk "${currentQuery}"`);
+      logLine("info", "Coba kata kunci lain atau scrape manual dari Otakudesu");
+      btn.disabled = false;
+      btn.innerHTML = "⚡ Scrape Sekarang";
+      return;
+    }
+
+    const slug = results[0].slug;
+    const title = results[0].title;
+    logLine("ok", `Ditemukan: ${title} (${slug})`);
+
+    // Step 2: Trigger scrape
+    logLine("info", `Memulai scrape anime: ${slug}...`);
+
+    const scrapeRes = await fetch(`${API_BASE}/share/empty/${slug}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "otakudesu",
+        follow_all: false,
+      }),
+    });
+
+    const scrapeData = await scrapeRes.json();
+
+    if (!scrapeData.success) {
+      throw new Error(scrapeData.error.message);
+    }
+
+    logLine("ok", `✅ Scrape berhasil!`);
+    logLine("ok", `   Anime: ${scrapeData.data.anime}`);
+    logLine("ok", `   Episode: ${scrapeData.data.episodes}`);
+    logLine("ok", `   Download: ${scrapeData.data.downloads}`);
+    logLine("info", `Redirect ke detail anime...`);
+
+    // Redirect ke detail
+    setTimeout(() => {
+      window.location.href = `/portal/detail.html?slug=${slug}`;
+    }, 1500);
+
+  } catch (err) {
+    logLine("err", `Error: ${err.message}`);
+    console.error("[Scrape]", err);
+    btn.disabled = false;
+    btn.innerHTML = "⚡ Scrape Sekarang";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCRAPE ALL EPISODES
+// ═══════════════════════════════════════════════════════════
+async function triggerScrapeAll() {
+  if (currentQuery === "-") {
+    logLine("err", "Query kosong, tidak bisa scrape");
+    return;
+  }
+
+  const btn = document.getElementById("btn-scrape-all");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Scraping...';
+
+  logLine("info", `Mode FULL SCRAPE untuk query: "${currentQuery}"`);
+  logLine("info", `Ini akan scrape semua episode (lebih lambat)...`);
+
+  try {
+    // Step 1: Search
+    const searchRes = await fetch(
+      `${API_BASE}/share/query?q=${encodeURIComponent(currentQuery)}&live=true&limit=1`
+    );
+    const searchData = await searchRes.json();
+
+    if (!searchData.success) {
+      throw new Error(searchData.error.message);
+    }
+
+    const results = searchData.data.results || [];
+    if (results.length === 0) {
+      logLine("err", `Tidak ada hasil untuk "${currentQuery}"`);
+      btn.disabled = false;
+      btn.innerHTML = "📚 Scrape Semua Episode";
+      return;
+    }
+
+    const slug = results[0].slug;
+    logLine("ok", `Ditemukan: ${results[0].title} (${slug})`);
+
+    // Step 2: Scrape dengan follow_all=true
+    logLine("info", `Scraping SEMUA episode dari ${slug}...`);
+    logLine("info", `Mohon tunggu, ini memakan waktu 1-5 menit...`);
+
+    const scrapeRes = await fetch(`${API_BASE}/share/empty/${slug}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "otakudesu",
+        follow_all: true,   // ← FULL SCRAPE
+      }),
+    });
+
+    const scrapeData = await scrapeRes.json();
+
+    if (!scrapeData.success) {
+      throw new Error(scrapeData.error.message);
+    }
+
+    logLine("ok", `✅ Full scrape berhasil!`);
+    logLine("ok", `   Anime: ${scrapeData.data.anime}`);
+    logLine("ok", `   Episode: ${scrapeData.data.episodes}`);
+    logLine("ok", `   Download: ${scrapeData.data.downloads}`);
+    logLine("info", `Redirect ke detail anime...`);
+
+    setTimeout(() => {
+      window.location.href = `/portal/detail.html?slug=${slug}`;
+    }, 2000);
+
+  } catch (err) {
+    logLine("err", `Error: ${err.message}`);
+    console.error("[Full Scrape]", err);
+    btn.disabled = false;
+    btn.innerHTML = "📚 Scrape Semua Episode";
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — AniWatch API</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* Style khusus list key yang bisa diklik */
+  .key-item.clickable {
+    cursor: pointer;
+    position: relative;
+  }
+  .key-item.clickable:hover {
+    border-color: var(--accent);
+    background: rgba(91, 141, 239, 0.08);
+    transform: translateX(4px);
+  }
+  .key-item.clickable::after {
+    content: "→";
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 18px;
+    opacity: 0;
+    transition: all 0.2s;
+  }
+  .key-item.clickable:hover::after {
+    opacity: 1;
+    right: 12px;
+    color: var(--accent);
+  }
+
+  /* Tombol buat key */
+  .create-box {
+    background: var(--bg);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .create-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .create-row input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 10px;
+    font-family: inherit;
+  }
+  .create-row select {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 10px;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📊 Dashboard</h1>
+    <p id="welcome">Selamat datang!</p>
+    <div class="nav">
+      <a href="index.html">🏠 Beranda</a>
+      <a href="dashboard.html" class="active">📊 Dashboard</a>
+      <a href="license.html">📄 Lisensi</a>
+      <a href="#" id="btn-logout">🚪 Logout</a>
+    </div>
+  </div>
+
+  <!-- INFO AKUN -->
+  <div class="panel">
+    <h2>👤 Akun</h2>
+    <div class="info-grid">
+      <div class="stat-box">
+        <span class="num" id="user-name">-</span>
+        <span class="lbl">Username</span>
+      </div>
+      <div class="stat-box">
+        <span class="num" id="user-role">-</span>
+        <span class="lbl">Role</span>
+      </div>
+      <div class="stat-box">
+        <span class="num" id="key-count">0</span>
+        <span class="lbl">Total Keys</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUAT KEY BARU -->
+  <div class="panel">
+    <h2>➕ Buat Key Baru</h2>
+    <div class="alert" id="keys-alert"></div>
+    <div class="create-box">
+      <div class="create-row">
+        <input type="text" id="new-key-name" placeholder="Nama key (mis. mobile-app)">
+        <select id="new-key-limit">
+          <option value="30">30 req/menit</option>
+          <option value="100" selected>100 req/menit</option>
+          <option value="500">500 req/menit</option>
+          <option value="1200">1200 req/menit</option>
+        </select>
+        <select id="new-key-days">
+          <option value="30">30 hari</option>
+          <option value="90" selected>90 hari</option>
+          <option value="180">180 hari</option>
+          <option value="365">1 tahun</option>
+        </select>
+        <button id="btn-create-key" class="success">➕ Buat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAFTAR KEY -->
+  <div class="panel">
+    <h2>🔑 API Keys Saya</h2>
+    <div id="keys-list">
+      <div class="empty">
+        <div class="icon">🔑</div>
+        <p>Belum ada API key. Buat satu di atas.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/api.js"></script>
+<script src="assets/app.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD LOGIC (khusus halaman ini)
+// ═══════════════════════════════════════════════════════════
+
+// ═══ 1. Cek user login ═══
+(function checkAuth() {
+  const user = JSON.parse(localStorage.getItem("aniwatch_user") || "null");
+  if (!user) {
+    console.log("🔒 Belum login, redirect...");
+    window.location.href = "login.html";
+    return;
+  }
+
+  // Set info user
+  const welcome = document.getElementById("welcome");
+  if (welcome) welcome.textContent = `Selamat datang, ${user.username}!`;
+  document.getElementById("user-name").textContent = user.username || "-";
+  document.getElementById("user-role").textContent = user.role || "user";
+})();
+
+// ═══ 2. Load keys ═══
+async function loadKeys() {
+  const list = document.getElementById("keys-list");
+  if (!list) return;
+
+  const apiKey = localStorage.getItem("aniwatch_api_key");
+  const token = localStorage.getItem("aniwatch_token");
+
+  // Kalau belum login
+  if (!token && !apiKey) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="icon">🔒</div>
+        <p>Silakan <a href="login.html">login</a> dulu.</p>
+      </div>`;
+    return;
+  }
+
+  // Loading
+  list.innerHTML = `
+    <div class="empty">
+      <div class="icon">⏳</div>
+      <p>Loading...</p>
+    </div>`;
+
+  try {
+    const data = await API.listKeys(apiKey);
+
+    if (!data.success) {
+      throw new Error(data.error?.message || "Gagal load keys");
+    }
+
+    const keys = data.data || [];
+
+    // Update count
+    const countEl = document.getElementById("key-count");
+    if (countEl) countEl.textContent = keys.length;
+
+    if (keys.length === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="icon">🔑</div>
+          <p>Belum ada API key. Buat satu di atas.</p>
+        </div>`;
+      return;
+    }
+
+    const html = keys.map((k) => {
+      // Status
+      let statusClass = "active";
+      let statusText = "Active";
+      if (!k.is_active) {
+        statusClass = "revoked";
+        statusText = "Revoked";
+      } else if (k.expires_at && new Date(k.expires_at) < new Date()) {
+        statusClass = "expired";
+        statusText = "Expired";
+      }
+
+      return `
+        <div class="key-item clickable" data-key-id="${k.id}" onclick="openDetail(${k.id})">
+          <div class="header-row">
+            <div class="key-name">
+              ${k.name || "(no name)"}
+              <span class="badge-status ${statusClass}">${statusText}</span>
+              ${k.role === "admin" ? '<span class="badge-role admin">admin</span>' : ''}
+            </div>
+            <div class="key-prefix">${k.key_prefix}...</div>
+          </div>
+          <div class="meta">
+            <div class="item">
+              <span class="label">Limit:</span>
+              <span class="value">${k.rate_limit} req/menit</span>
+            </div>
+            <div class="item">
+              <span class="label">Used:</span>
+              <span class="value">${k.request_count || 0}</span>
+            </div>
+            <div class="item">
+              <span class="label">Expires:</span>
+              <span class="value">${k.expires_at ? timeUntil(k.expires_at) : "∞"}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    list.innerHTML = html;
+
+    // Simpan ke localStorage untuk akses cepat di detail.html
+    localStorage.setItem("aniwatch_keys_cache", JSON.stringify(keys));
+
+  } catch (err) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="icon">⚠️</div>
+        <p>Error: ${err.message}</p>
+        <button class="secondary small" onclick="loadKeys()" style="margin-top:10px;">🔄 Coba Lagi</button>
+      </div>`;
+  }
+}
+
+// ═══ 3. Open detail ═══
+function openDetail(keyId) {
+  console.log("🔑 Buka detail key:", keyId);
+  // Simpan ID key yang dipilih
+  localStorage.setItem("aniwatch_selected_key_id", keyId);
+  // Redirect
+  window.location.href = `detail.html?id=${keyId}`;
+}
+// Expose global
+window.openDetail = openDetail;
+
+// ═══ 4. Create key ═══
+let _creatingKey = false;   // Guard anti-double-click
+
+async function createKey() {
+  // Guard: kalau sedang proses, skip
+  if (_creatingKey) {
+    console.warn("⏳ createKey sedang berjalan, skip");
+    return;
+  }
+  _creatingKey = true;
+
+  const btn = document.getElementById("btn-create-key");
+  const nameInput = document.getElementById("new-key-name");
+  const limitSelect = document.getElementById("new-key-limit");
+  const daysSelect = document.getElementById("new-key-days");
+
+  const name = nameInput.value.trim() || "default";
+  const limit = parseInt(limitSelect.value) || 100;
+  const days = parseInt(daysSelect.value) || 90;
+
+  btn.disabled = true;
+  btn.textContent = "Membuat...";
+
+  try {
+    const data = await API.getKey(name, null, null, limit, days);
+
+    if (!data.success) {
+      throw new Error(data.error?.message || "Gagal");
+    }
+
+    // Simpan key baru
+    localStorage.setItem("aniwatch_api_key", data.data.key);
+
+    // Show alert
+    showAlert(
+      `✅ API key dibuat! Sudah dicopy ke clipboard.`,
+      "success",
+      "keys-alert"
+    );
+
+    // Copy ke clipboard
+    try {
+      await navigator.clipboard.writeText(data.data.key);
+      console.log("📋 Key dicopy:", data.data.key.slice(0, 30) + "...");
+    } catch (e) {
+      console.warn("Gagal copy:", e);
+    }
+
+    // Clear input
+    nameInput.value = "";
+
+    // Reload list
+    await loadKeys();
+
+  } catch (err) {
+    showAlert("❌ " + err.message, "error", "keys-alert");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "➕ Buat";
+    _creatingKey = false;   // Reset guard
+  }
+}
+
+// ═══ 5. Logout ═══
+function logout(e) {
+  if (e) e.preventDefault();
+  if (!confirm("Logout dari akun ini?")) return;
+
+  // Clear semua
+  localStorage.removeItem("aniwatch_user");
+  localStorage.removeItem("aniwatch_api_key");
+  localStorage.removeItem("aniwatch_token");
+  localStorage.removeItem("aniwatch_keys_cache");
+  localStorage.removeItem("aniwatch_selected_key_id");
+
+  window.location.href = "index.html";
+}
+
+// ═══ 6. Init ═══
+document.addEventListener("DOMContentLoaded", () => {
+  // Bind create key
+  const btnCreate = document.getElementById("btn-create-key");
+  if (btnCreate) {
+    btnCreate.addEventListener("click", createKey);
+  }
+
+  // Bind logout
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", logout);
+  }
+
+  // Load keys
+  loadKeys();
+
+  console.log("🎌 Dashboard loaded");
+});
+</script>
+</body>
+</html>

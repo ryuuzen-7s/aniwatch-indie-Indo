@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>License & Copyright — AniWatch</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* ═══ License Page Specific ═══ */
+  .license-hero {
+    text-align: center;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, rgba(91, 141, 239, 0.1), rgba(168, 85, 247, 0.1));
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    margin-bottom: 24px;
+  }
+
+  .license-hero .icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .license-hero h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    background: var(--grad-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .license-hero .subtitle {
+    color: var(--text-2);
+    font-size: 14px;
+  }
+
+  .doc-id {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 6px 14px;
+    background: rgba(91, 141, 239, 0.15);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 12px;
+    color: var(--accent-2);
+  }
+
+  /* Tab switcher */
+  .license-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .license-tab {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s var(--ease);
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .license-tab:hover { color: var(--text-2); }
+
+  .license-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .license-content { display: none; }
+  .license-content.active {
+    display: block;
+    animation: fadeInUp 0.3s var(--ease);
+  }
+
+  /* Markdown-style content */
+  .md-content h2 {
+    font-size: 20px;
+    color: var(--accent);
+    margin: 24px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .md-content h3 {
+    font-size: 16px;
+    color: var(--text);
+    margin: 18px 0 10px;
+  }
+
+  .md-content p {
+    color: var(--text-2);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .md-content ul, .md-content ol {
+    margin: 12px 0 12px 24px;
+    color: var(--text-2);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .md-content li { margin-bottom: 6px; }
+
+  .md-content code {
+    background: var(--bg-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 13px;
+    color: var(--accent-2);
+    border: 1px solid var(--border);
+  }
+
+  .md-content pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    margin: 12px 0;
+    line-height: 1.6;
+  }
+
+  .md-content strong { color: var(--text); font-weight: 700; }
+
+  .md-content a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent);
+  }
+  .md-content a:hover {
+    color: var(--accent-2);
+    border-bottom-color: var(--accent-2);
+  }
+
+  /* Info box */
+  .info-box {
+    background: rgba(91, 141, 239, 0.08);
+    border: 1px solid rgba(91, 141, 239, 0.4);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 13px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    color: var(--accent-2);
+  }
+
+  .info-box .icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .warn-box {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 13px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    color: var(--warn);
+  }
+
+  /* Signature block */
+  .sig-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin: 10px 0;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+
+  .sig-block .label {
+    color: var(--muted);
+    display: inline-block;
+    width: 120px;
+  }
+
+  .sig-block .value { color: var(--text); }
+  .sig-block .verified { color: var(--success); font-weight: 700; }
+
+  /* Data table */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+
+  .data-table th {
+    background: var(--bg-2);
+    color: var(--text-2);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-2);
+  }
+
+  .data-table tr:hover td {
+    background: rgba(91, 141, 239, 0.04);
+    color: var(--text);
+  }
+
+  .data-table .mono {
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 12px;
+    color: var(--accent-2);
+  }
+
+  /* Download section */
+  .download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .download-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s var(--ease);
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+  }
+
+  .download-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .download-card .doc-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .download-card .doc-name {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .download-card .doc-desc {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  /* Footer copyright */
+  .copyright-footer {
+    text-align: center;
+    padding: 24px 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .copyright-footer .org {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .copyright-footer .year {
+    color: var(--text-2);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+
+  @media (max-width: 640px) {
+    .license-hero h1 { font-size: 22px; }
+    .license-hero .icon { font-size: 36px; }
+    .license-tab { padding: 10px 12px; font-size: 13px; }
+    .md-content h2 { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="header">
+    <h1>📜 License & Copyright</h1>
+    <p>AniWatch API — Legal Information</p>
+    <div class="nav">
+      <a href="/portal/index.html">🏠 Beranda</a>
+      <a href="/portal/login.html">🔓 Login</a>
+      <a href="/portal/dashboard.html">📊 Dashboard</a>
+      <a href="/portal/license.html" class="active">📜 License</a>
+      <a href="/docs" target="_blank">📚 Docs</a>
+    </div>
+  </div>
+
+  <!-- ═══ HERO ═══ -->
+  <div class="license-hero">
+    <span class="icon">⚖️</span>
+    <h1>AniWatch Legal Documents</h1>
+    <p class="subtitle">Informasi lisensi, hak cipta, dan identitas project</p>
+    <div class="doc-id">Doc ID: ACI-CR-2026-ANIWATCH-001</div>
+  </div>
+
+  <!-- ═══ DOWNLOAD CARDS ═══ -->
+  <div class="panel">
+    <h2>📥 Download Dokumen</h2>
+    <div class="download-grid">
+      <a class="download-card" href="/portal/docs/identity.md" download>
+        <span class="doc-icon">🎌</span>
+        <div class="doc-name">identity.md</div>
+        <div class="doc-desc">Identitas project</div>
+      </a>
+      <a class="download-card" href="/portal/docs/LICENSE.md" download>
+        <span class="doc-icon">📜</span>
+        <div class="doc-name">LICENSE.md</div>
+        <div class="doc-desc">Lisensi resmi</div>
+      </a>
+      <a class="download-card" href="/portal/docs/copyright.md" download>
+        <span class="doc-icon">©️</span>
+        <div class="doc-name">copyright.md</div>
+        <div class="doc-desc">Copyright digital</div>
+      </a>
+      <a class="download-card" href="/portal/docs/information.md" download>
+        <span class="doc-icon">📖</span>
+        <div class="doc-name">information.md</div>
+        <div class="doc-desc">Info teknis</div>
+      </a>
+      <a class="download-card" href="/portal/docs/CHANGELOG.md" download>
+        <span class="doc-icon">📝</span>
+        <div class="doc-name">CHANGELOG.md</div>
+        <div class="doc-desc">Riwayat perubahan</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══ TABS ═══ -->
+  <div class="panel">
+    <div class="license-tabs">
+      <button class="license-tab active" data-tab="identity">🎌 Identity</button>
+      <button class="license-tab" data-tab="license">📜 License</button>
+      <button class="license-tab" data-tab="copyright">©️ Copyright</button>
+    </div>
+
+    <!-- ═══ TAB: IDENTITY ═══ -->
+    <div class="license-content active md-content" id="tab-identity">
+      <h2>🎌 AniWatch — Identity</h2>
+      <p><strong>AniWatch</strong> adalah REST API untuk scraping anime dari berbagai sumber (Otakudesu, Kuramanime, AnimeIndo). Dibangun dengan <strong>FastAPI</strong> + <strong>SQLAlchemy</strong> + <strong>Pydantic v2</strong>.</p>
+
+      <h3>📌 Informasi Project</h3>
+      <table class="data-table">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Nama</td><td>AniWatch API</td></tr>
+        <tr><td>Version</td><td>1.0.1</td></tr>
+        <tr><td>Framework</td><td>FastAPI</td></tr>
+        <tr><td>Database</td><td>SQLite (WAL)</td></tr>
+        <tr><td>Source</td><td>Otakudesu</td></tr>
+        <tr><td>Deployment</td><td>Uvicorn + ZROK</td></tr>
+      </table>
+
+      <h3>🏢 Organization</h3>
+      <table class="data-table">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Organisasi</td><td><strong>Anicorporation.img</strong></td></tr>
+        <tr><td>Developer</td><td>Anikuze Ryuuzen</td></tr>
+        <tr><td>Pendiri</td><td>Lio Syberion</td></tr>
+        <tr><td>Tahun</td><td>©2026</td></tr>
+        <tr><td>Negara</td><td>Indonesia</td></tr>
+      </table>
+
+      <h3>🌐 Base URL</h3>
+      <table class="data-table">
+        <tr><th>Environment</th><th>URL</th></tr>
+        <tr><td>Local</td><td class="mono">http://localhost:8000</td></tr>
+        <tr><td>Public</td><td class="mono">https://aniwatch.share.zrok.io</td></tr>
+      </table>
+
+      <div class="info-box">
+        <span class="icon">💡</span>
+        <div>
+          Dokumentasi lengkap endpoint API bisa diakses di
+          <a href="/docs" target="_blank">/docs</a> (Swagger UI) atau
+          <a href="/redoc" target="_blank">/redoc</a> (ReDoc).
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: LICENSE ═══ -->
+    <div class="license-content md-content" id="tab-license">
+      <h2>📜 Anicorporation.img License v1.0</h2>
+      <p><strong>Copyright ©2026 Anicorporation.img</strong></p>
+
+      <h3>✅ Yang Diizinkan</h3>
+      <ul>
+        <li>Penggunaan pribadi</li>
+        <li>Penggunaan edukasi</li>
+        <li>Penggunaan penelitian</li>
+        <li>Penggunaan non-komersial</li>
+        <li>Mempelajari source code</li>
+        <li>Modifikasi untuk keperluan pribadi</li>
+      </ul>
+
+      <h3>❌ Yang Tidak Diizinkan</h3>
+      <ul>
+        <li>Penggunaan komersial tanpa izin</li>
+        <li>Menjual software atau turunannya</li>
+        <li>Menghapus notice copyright</li>
+        <li>Mengklaim software sebagai milik sendiri</li>
+        <li>Penggunaan untuk aktivitas ilegal</li>
+        <li>Distribusi ulang tanpa lisensi</li>
+      </ul>
+
+      <h3>📋 Atribusi Wajib</h3>
+      <ul>
+        <li>Nama organisasi: <strong>Anicorporation.img</strong></li>
+        <li>Nama developer: <strong>Anikuze Ryuuzen</strong></li>
+        <li>Tahun copyright: <strong>©2026</strong></li>
+        <li>Salinan lisensi ini</li>
+      </ul>
+
+      <h3>⚠️ Disclaimer</h3>
+      <pre>SOFTWARE INI DISEDIAKAN "AS IS", TANPA JAMINAN APAPUN,
+BAIK TERSURAT MAUPUN TERSIRAT. DALAM KEADAAN APAPUN,
+PENULIS ATAU PEMEGANG HAK CIPTA TIDAK BERTANGGUNG JAWAB
+ATAS KLAIM, KERUSAKAN, ATAU KEWAJIBAN LAIN YANG TIMBUL
+DARI PENGGUNAAN SOFTWARE.</pre>
+
+      <h3>⚖️ Hukum yang Berlaku</h3>
+      <p>Lisensi ini diatur oleh hukum <strong>Republik Indonesia</strong>. Setiap sengketa akan diselesaikan melalui musyawarah, mediasi, dan pengadilan jika diperlukan.</p>
+
+      <div class="warn-box">
+        <span class="icon">⚠️</span>
+        <div>
+          <strong>Penting:</strong> Konten anime (judul, sinopsis, poster, video) adalah milik pemegang hak cipta masing-masing.
+          AniWatch hanya menyediakan <strong>antarmuka teknis</strong> untuk mengakses data publik.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: COPYRIGHT ═══ -->
+    <div class="license-content md-content" id="tab-copyright">
+      <h2>©️ Digital Copyright</h2>
+
+      <div class="info-box">
+        <span class="icon">🔐</span>
+        <div>
+          <strong>Doc ID:</strong> <code>ACI-CR-2026-ANIWATCH-001</code><br>
+          <strong>Status:</strong> <span class="verified">✅ VERIFIED DIGITAL</span><br>
+          <strong>Version:</strong> 2.0 (Digital)
+        </div>
+      </div>
+
+      <h3>1️⃣ Nama Organisasi Sebelumnya</h3>
+      <table class="data-table">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Nama</td><td>SyberEco.corp.ind</td></tr>
+        <tr><td>Pendiri</td><td>Syres Alona</td></tr>
+        <tr><td>Tahun</td><td>Sebelum 2026</td></tr>
+        <tr><td>Status</td><td>❌ Tidak Aktif</td></tr>
+      </table>
+
+      <h3>2️⃣ Nama Organisasi Baru</h3>
+      <table class="data-table">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Nama</td><td><strong>Anicorporation.img</strong></td></tr>
+        <tr><td>Pendiri</td><td>Lio Syberion</td></tr>
+        <tr><td>Developer</td><td>Anikuze Ryuuzen</td></tr>
+        <tr><td>Tahun</td><td>©2026</td></tr>
+        <tr><td>Status</td><td>✅ Aktif</td></tr>
+      </table>
+
+      <h3>3️⃣ Ringkasan Serah Terima</h3>
+      <table class="data-table">
+        <tr>
+          <th>Aspek</th>
+          <th>Organisasi Lama</th>
+          <th>Organisasi Baru</th>
+        </tr>
+        <tr>
+          <td>Nama</td>
+          <td>SyberEco.corp.ind</td>
+          <td><strong>Anicorporation.img</strong></td>
+        </tr>
+        <tr>
+          <td>Pendiri</td>
+          <td>Syres Alona</td>
+          <td>Lio Syberion</td>
+        </tr>
+        <tr>
+          <td>Developer</td>
+          <td>—</td>
+          <td>Anikuze Ryuuzen</td>
+        </tr>
+        <tr>
+          <td>Tahun</td>
+          <td>Sebelum 2026</td>
+          <td>©2026</td>
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td>❌ Tidak Aktif</td>
+          <td>✅ Aktif</td>
+        </tr>
+      </table>
+
+      <h3>4️⃣ Saksi Serah Terima</h3>
+
+      <h4 style="color: var(--warn); font-size: 14px; margin: 14px 0 8px;">🏢 Pihak Lama (SyberEco.corp.ind)</h4>
+      <div class="sig-block">
+        <div><span class="label">Saksi 1:</span> <span class="value">Yuna Syres</span> <span class="verified">[✓ Verified]</span></div>
+        <div><span class="label">Saksi 2:</span> <span class="value">WinterHouse</span> <span class="verified">[✓ Verified]</span></div>
+      </div>
+
+      <h4 style="color: var(--success); font-size: 14px; margin: 14px 0 8px;">🏢 Pihak Baru (Anicorporation.img)</h4>
+      <div class="sig-block">
+        <div><span class="label">Saksi 1:</span> <span class="value">Anikuze Ryuuzen</span> <span class="verified">[✓ Verified]</span></div>
+        <div><span class="label">Saksi 2:</span> <span class="value">Tia Yunia</span> <span class="verified">[✓ Verified]</span></div>
+      </div>
+
+      <h3>5️⃣ Digital Signature</h3>
+      <div class="sig-block">
+        <div><span class="label">Penyerah:</span> <span class="value">Syres Alona</span> (Pendiri SyberEco.corp.ind)</div>
+        <div><span class="label">Penerima:</span> <span class="value">Lio Syberion</span> (Pendiri Anicorporation.img)</div>
+        <div><span class="label">Developer:</span> <span class="value">Anikuze Ryuuzen</span></div>
+        <div><span class="label">Date:</span> <span class="value">2026-10-08</span></div>
+        <div><span class="label">Hash:</span> <span class="value">SHA-256 VALID</span></div>
+      </div>
+
+      <h3>6️⃣ Chain of Custody</h3>
+      <pre>┌────────────────────────────────────────────┐
+│           CHAIN OF CUSTODY                 │
+├────────────────────────────────────────────┤
+│                                            │
+│  [1] SyberEco.corp.ind (Pre-2026)         │
+│      │  Founder: Syres Alona              │
+│      │  Witnesses: Yuna Syres, WinterHouse│
+│      ↓                                     │
+│  [2] TRANSFER AGREEMENT (2026)             │
+│      │  Signed: Syres Alona, Lio Syberion │
+│      ↓                                     │
+│  [3] Anicorporation.img (2026)             │
+│      │  Founder: Lio Syberion             │
+│      │  Developer: Anikuze Ryuuzen        │
+│      ↓                                     │
+│  [4] ACTIVE — ©2026                       │
+│                                            │
+└────────────────────────────────────────────┘</pre>
+
+      <h3>7️⃣ Ringkasan Digital</h3>
+      <table class="data-table">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Doc ID</td><td class="mono">ACI-CR-2026-ANIWATCH-001</td></tr>
+        <tr><td>Issuer</td><td>Anicorporation.img</td></tr>
+        <tr><td>Developer</td><td>Anikuze Ryuuzen</td></tr>
+        <tr><td>Founder</td><td>Lio Syberion</td></tr>
+        <tr><td>From</td><td>SyberEco.corp.ind</td></tr>
+        <tr><td>Ex-Founder</td><td>Syres Alona</td></tr>
+        <tr><td>Status</td><td class="verified">✅ VERIFIED</td></tr>
+        <tr><td>Signature</td><td class="verified">✅ VALID</td></tr>
+        <tr><td>Hash</td><td class="verified">✅ MATCHED</td></tr>
+      </table>
+
+      <div class="info-box">
+        <span class="icon">🔗</span>
+        <div>
+          Untuk verifikasi hash digital, jalankan:
+          <code>python tools\verify_copyright.py</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER COPYRIGHT ═══ -->
+  <div class="copyright-footer">
+    <div class="org">Anicorporation.img</div>
+    <div>Project: AniWatch</div>
+    <div>Developer: <strong>Anikuze Ryuuzen</strong></div>
+    <div>Founder: Lio Syberion</div>
+    <div class="year">©2026 — All Rights Reserved</div>
+    <div style="margin-top: 10px; font-size: 11px;">
+      Ex: SyberEco.corp.ind — Founder: Syres Alona
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  TAB SWITCHER
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll(".license-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.tab;
+
+    // Update active tab
+    document.querySelectorAll(".license-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    // Update active content
+    document.querySelectorAll(".license-content").forEach((c) => c.classList.remove("active"));
+    const content = document.getElementById("tab-" + target);
+    if (content) content.classList.add("active");
+
+    // Update URL hash (tanpa reload)
+    history.replaceState(null, "", "#" + target);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  RESTORE FROM HASH
+// ═══════════════════════════════════════════════════════════
+(function restoreTab() {
+  const hash = location.hash.replace("#", "");
+  if (hash) {
+    const tab = document.querySelector(`.license-tab[data-tab="${hash}"]`);
+    if (tab) tab.click();
+  }
+})();
+
+console.log("📜 License page loaded");
+console.log("   Doc ID: ACI-CR-2026-ANIWATCH-001");
+console.log("   Org: Anicorporation.img");
+</script>
+</body>
+</html>

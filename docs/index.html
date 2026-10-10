@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniWatch Monitoring</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0e0a;
+    color: #33ff33;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    padding: 20px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .terminal {
+    max-width: 980px;
+    margin: 0 auto;
+    background: #000;
+    border: 1px solid #33ff33;
+    border-radius: 6px;
+    padding: 40px 22px 22px;
+    box-shadow: 0 0 40px rgba(51, 255, 51, 0.15);
+    position: relative;
+  }
+
+  .terminal::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff5f56;
+    box-shadow: 22px 0 0 #ffbd2e, 44px 0 0 #27c93f;
+  }
+
+  .terminal::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      transparent 50%,
+      rgba(51, 255, 51, 0.03) 50%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    border-radius: 6px;
+  }
+
+  .header {
+    text-align: center;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #33ff33;
+    letter-spacing: 1.5px;
+    font-weight: bold;
+    font-size: 15px;
+  }
+
+  .section {
+    border-top: 1px dashed #33ff33;
+    border-bottom: 1px dashed #33ff33;
+    padding: 8px 0;
+    margin: 22px 0 12px;
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-size: 14px;
+  }
+
+  .spec {
+    display: grid;
+    grid-template-columns: 150px 20px 1fr;
+    gap: 2px 8px;
+    margin: 8px 0;
+  }
+
+  .spec .k { color: #33ff33; }
+  .spec .s { color: #33ff33; }
+  .spec .v { color: #88ff88; }
+
+  .status-ok { color: #33ff33; }
+  .status-warn { color: #ffbd2e; }
+  .status-err { color: #ff5f56; }
+
+  .endpoint {
+    margin: 14px 0 14px 12px;
+    padding-left: 12px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .endpoint:hover {
+    border-left-color: #33ff33;
+    background: rgba(51, 255, 51, 0.04);
+  }
+
+  .endpoint-name {
+    color: #00ffaa;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  .method {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 4px;
+  }
+
+  .method.get { background: #33ff33; color: #000; }
+  .method.post { background: #ffbd2e; color: #000; }
+
+  .endpoint-meta {
+    color: #33ff33;
+    padding-left: 8px;
+    font-size: 12px;
+  }
+
+  .endpoint-meta .label {
+    display: inline-block;
+    width: 100px;
+    color: #1a8a1a;
+  }
+
+  .endpoint-meta .val { color: #88ff88; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: #33ff33;
+    animation: blink 1s infinite;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  #liveDot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #33ff33;
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .footer {
+    text-align: center;
+    color: #1a8a1a;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px dashed #33ff33;
+    font-size: 12px;
+  }
+
+  a {
+    color: #33ff33;
+    text-decoration: none;
+    border-bottom: 1px dotted #33ff33;
+  }
+  a:hover { color: #88ff88; border-bottom-color: #88ff88; }
+
+  .bar {
+    display: inline-block;
+    color: #33ff33;
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 10px; font-size: 12px; }
+    .terminal { padding: 34px 14px 14px; }
+    .spec { grid-template-columns: 110px 15px 1fr; }
+    .endpoint-meta .label { width: 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="terminal">
+  <div class="header">API ANIWATCH MONITORING</div>
+
+  <!-- ═══ TRAFFIC ═══ -->
+  <div class="section">TRAFFIC</div>
+  <div class="spec">
+    <span class="k">UP link</span>
+    <span class="s">:</span>
+    <span class="v" id="upLink"><span id="liveDot"></span>checking...</span>
+
+    <span class="k">DOWN link</span>
+    <span class="s">:</span>
+    <span class="v" id="downLink">-- ms</span>
+
+    <span class="k">Total req</span>
+    <span class="s">:</span>
+    <span class="v" id="totalReq">0</span>
+
+    <span class="k">Status API</span>
+    <span class="s">:</span>
+    <span class="v" id="apiStatus">checking...</span>
+  </div>
+
+  <!-- ═══ SPECIFICATION ═══ -->
+  <div class="section">SPESIFIKATION</div>
+  <div class="spec">
+    <span class="k">Model</span>
+    <span class="s">:</span>
+    <span class="v">Aspire-811XS</span>
+
+    <span class="k">Manufacture</span>
+    <span class="s">:</span>
+    <span class="v">ASPIRE</span>
+
+    <span class="k">Serial</span>
+    <span class="s">:</span>
+    <span class="v">AZ9199937467721</span>
+
+    <span class="k">CPU</span>
+    <span class="s">:</span>
+    <span class="v">Intel Core i3-7020U (4C/8T, 2.30GHz)</span>
+
+    <span class="k">RAM</span>
+    <span class="s">:</span>
+    <span class="v">4GB DDR2</span>
+
+    <span class="k">Storage</span>
+    <span class="s">:</span>
+    <span class="v">4,88GB</span>
+
+    <span class="k">Network</span>
+    <span class="s">:</span>
+    <span class="v">VGigabit Ethernet (1300MBPS)</span>
+
+    <span class="k"></span>
+    <span class="s">:</span>
+    <span class="v">Virtualizer Nircable (2.4G)</span>
+
+    <span class="k">App version</span>
+    <span class="s">:</span>
+    <span class="v" id="appVersion">--</span>
+
+    <span class="k">DB size</span>
+    <span class="s">:</span>
+    <span class="v" id="dbSize">--</span>
+
+    <span class="k">DB tables</span>
+    <span class="s">:</span>
+    <span class="v" id="dbTables">--</span>
+  </div>
+
+  <!-- ═══ DATABASE STATS ═══ -->
+  <div class="section">DATABASE STATS</div>
+  <div class="spec">
+    <span class="k">Anime</span>
+    <span class="s">:</span>
+    <span class="v" id="statAnime">0</span>
+
+    <span class="k">Episode</span>
+    <span class="s">:</span>
+    <span class="v" id="statEpisode">0</span>
+
+    <span class="k">Download</span>
+    <span class="s">:</span>
+    <span class="v" id="statDownload">0</span>
+
+    <span class="k">Report</span>
+    <span class="s">:</span>
+    <span class="v" id="statReport">0</span>
+
+    <span class="k">Sources</span>
+    <span class="s">:</span>
+    <span class="v" id="statSources">--</span>
+  </div>
+
+  <!-- ═══ ENDPOINT ═══ -->
+  <div class="section">ENDPOINT</div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/anime/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Detail anime</span></div>
+      <div><span class="label">Cache</span>: <span class="val">7 hari</span></div>
+      <div><span class="label">Query</span>: <span class="val">?source, ?refresh, ?include_episodes</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/episodeid/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">List semua episode</span></div>
+      <div><span class="label">Cache</span>: <span class="val">1 hari</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/episode/{number}/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Detail episode + stream + download</span></div>
+      <div><span class="label">Cache</span>: <span class="val">1 jam</span></div>
+      <div><span class="label">Query</span>: <span class="val">?include_downloads</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/posterid/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">URL poster</span></div>
+      <div><span class="label">Query</span>: <span class="val">?redirect=true</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/query?q={keyword}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Cari anime</span></div>
+      <div><span class="label">Query</span>: <span class="val">?q, ?source, ?limit, ?live</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/season/{season}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Anime per season</span></div>
+      <div><span class="label">Format</span>: <span class="val">fall-2026, winter-2025, 2026</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method get">GET</span> /share/now
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Anime ongoing terbaru</span></div>
+      <div><span class="label">Cache</span>: <span class="val">5 menit</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method post">POST</span> /share/errorid/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Report link error</span></div>
+      <div><span class="label">Body</span>: <span class="val">{ url, reason, quality, host }</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method post">POST</span> /share/empty/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Paksa scrape anime</span></div>
+      <div><span class="label">Body</span>: <span class="val">{ source, follow_all }</span></div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-name">
+      <span class="method post">POST</span> /share/linkask/{slug}
+    </div>
+    <div class="endpoint-meta">
+      <div><span class="label">Deskripsi</span>: <span class="val">Cek ketersediaan link</span></div>
+      <div><span class="label">Body</span>: <span class="val">{ type: stream|download|all, deep }</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ SYSTEM ═══ -->
+  <div class="section">SYSTEM</div>
+
+  <div class="spec">
+    <span class="k">Swagger</span>
+    <span class="s">:</span>
+    <span class="v"><a href="/docs">/docs</a></span>
+
+    <span class="k">ReDoc</span>
+    <span class="s">:</span>
+    <span class="v"><a href="/redoc">/redoc</a></span>
+
+    <span class="k">Health</span>
+    <span class="s">:</span>
+    <span class="v"><a href="/health">/health</a></span>
+
+    <span class="k">Stats</span>
+    <span class="s">:</span>
+    <span class="v"><a href="/stats">/stats</a></span>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span id="clock"></span><span class="cursor"></span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
+const API_URL = "";  // kosong = same origin
+
+// ═══════════════════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const t = pad(now.getHours()) + ":" +
+            pad(now.getMinutes()) + ":" +
+            pad(now.getSeconds());
+  const d = pad(now.getDate()) + "/" +
+            pad(now.getMonth() + 1) + "/" +
+            now.getFullYear();
+  document.getElementById("clock").textContent = d + " " + t;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════════
+//  PING /health
+// ═══════════════════════════════════════════════════════════
+async function pingHealth() {
+  const upEl = document.getElementById("upLink");
+  const downEl = document.getElementById("downLink");
+  const statusEl = document.getElementById("apiStatus");
+
+  const t0 = performance.now();
+  try {
+    const res = await fetch(API_URL + "/health", {
+      signal: AbortSignal.timeout(5000),
+    });
+    const dt = Math.round(performance.now() - t0);
+
+    if (res.ok) {
+      upEl.innerHTML = '<span id="liveDot"></span>' + dt + " ms";
+      upEl.className = "v status-ok";
+      downEl.textContent = dt + " ms";
+      downEl.className = "v status-ok";
+      statusEl.textContent = "HEALTHY";
+      statusEl.className = "v status-ok";
+
+      const data = await res.json();
+      if (data.data && data.data.version) {
+        document.getElementById("appVersion").textContent = data.data.version;
+      }
+    } else {
+      upEl.textContent = "HTTP " + res.status;
+      upEl.className = "v status-err";
+      statusEl.textContent = "DEGRADED";
+      statusEl.className = "v status-warn";
+    }
+  } catch (e) {
+    upEl.textContent = "OFFLINE";
+    upEl.className = "v status-err";
+    downEl.textContent = "OFFLINE";
+    downEl.className = "v status-err";
+    statusEl.textContent = "OFFLINE";
+    statusEl.className = "v status-err";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FETCH /stats
+// ═══════════════════════════════════════════════════════════
+async function fetchStats() {
+  try {
+    const res = await fetch(API_URL + "/stats", {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const d = data.data || {};
+
+    const db = d.database || {};
+    const counts = d.counts || {};
+
+    document.getElementById("dbSize").textContent = (db.size_kb || 0) + " KB";
+    document.getElementById("dbTables").textContent = (db.tables || []).join(", ") || "--";
+    document.getElementById("statAnime").textContent = counts.anime || 0;
+    document.getElementById("statEpisode").textContent = counts.episode || 0;
+    document.getElementById("statDownload").textContent = counts.download || 0;
+    document.getElementById("statReport").textContent = counts.report || 0;
+    document.getElementById("statSources").textContent = (d.sources || []).join(", ") || "--";
+
+    const total = (counts.anime || 0) + (counts.episode || 0) +
+                  (counts.download || 0) + (counts.report || 0);
+    document.getElementById("totalReq").textContent = total;
+  } catch (e) {
+    // silent
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+pingHealth();
+fetchStats();
+
+setInterval(pingHealth, 10000);   // tiap 10 detik
+setInterval(fetchStats, 15000);   // tiap 15 detik
+</script>
+</body>
+</html>

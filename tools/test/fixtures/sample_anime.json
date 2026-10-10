@@ -1,0 +1,24 @@
+{
+  "source": "otakudesu",
+  "slug": "sample-anime",
+  "url": "https://otakudesu.blog/anime/sample-anime/",
+  "metadata": {
+    "title": "Sample Anime",
+    "title_jp": "サンプルアニメ",
+    "studio": "Sample Studio",
+    "genres": ["Action", "Comedy"],
+    "total_episode": 12
+  },
+  "episode_details": [
+    {
+      "url": "https://otakudesu.blog/episode/sample-ep-1/",
+      "title": "Sample Episode 1",
+      "episode_number": 1,
+      "streams": [{"host": "desustream.net", "url": "https://desustream.net/embed/xxx"}],
+      "downloads": [
+        {"quality": "720p", "host": "Mega", "url": "https://mega.nz/xxx", "alive": true},
+        {"quality": "480p", "host": "Acefile", "url": "https://acefile.co/xxx", "alive": true}
+      ]
+    }
+  ]
+}

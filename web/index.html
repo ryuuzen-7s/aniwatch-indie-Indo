@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniWatch API — Portal</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="container">
+  <!-- HEADER -->
+  <div class="header">
+    <h1> AniWatch API </h1>
+    <p>Request API key & akses data anime</p>
+    <div class="nav">
+      <a href="index.html" class="active">
+        <span data-icon="home"></span> Beranda
+      </a>
+      <a href="login.html">
+        <span data-icon="login"></span> Login
+      </a>
+      <a href="portal/dashboard.html">
+        <span data-icon="dashboard"></span> Dashboard
+      </a>
+      <a href="docs" target="_blank">
+        <span data-icon="info"></span> Docs
+      </a>
+      <a href="license.html">
+        <span data-icon="file"></span> Lisensi
+      </a>
+    </div>
+  </div>
+
+  <!-- INFO API -->
+  <div class="panel">
+    <h2>
+      <span data-icon="chart"></span> Info API
+    </h2>
+    <div class="info-grid">
+      <div class="stat-box">
+        <span class="num" id="stat-status">?</span>
+        <span class="lbl">Status</span>
+      </div>
+      <div class="stat-box">
+        <span class="num" id="stat-version">?</span>
+        <span class="lbl">Version</span>
+      </div>
+      <div class="stat-box">
+        <span class="num">18</span>
+        <span class="lbl">Quick Rate</span>
+      </div>
+      <div class="stat-box">
+        <span class="num">130</span>
+        <span class="lbl">Quick Max</span>
+      </div>
+    </div>
+    <p style="margin-top: 16px; font-size: 13px; color: var(--muted);">
+      🌐 Base URL: <code id="base-url" style="color: var(--accent);">-</code>
+    </p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="quick">
+      <span data-icon="zap"></span> Cepat
+    </button>
+    <button class="tab" data-tab="login-info">
+      <span data-icon="login"></span> Punya Akun
+    </button>
+  </div>
+
+  <!-- TAB 1: QUICK KEY -->
+  <div class="tab-content active" id="tab-quick">
+    <div class="panel">
+      <h2>
+        <span data-icon="key"></span> Quick Key
+        <span class="badge">Sekali Pakai</span>
+      </h2>
+      <p style="color: var(--text-2); font-size: 13px; margin-bottom: 8px;">
+        Untuk testing cepat. Setelah dibuat, key <b>tidak bisa</b> dibuat ulang di browser ini.
+      </p>
+
+      <!-- Limit Info -->
+      <div class="quick-limits">
+        <div class="limit-box">
+          <span class="num">18</span>
+          <span class="lbl">Req / Menit</span>
+        </div>
+        <div class="limit-box">
+          <span class="num">130</span>
+          <span class="lbl">Total Max</span>
+        </div>
+        <div class="limit-box">
+          <span class="num">24</span>
+          <span class="lbl">Jam Aktif</span>
+        </div>
+        <div class="limit-box">
+          <span class="num">1×</span>
+          <span class="lbl">Pembuatan</span>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <span data-icon="warning"></span>
+        <div>
+          <b>Penting:</b> Quick key hanya untuk 1 kali pembuatan.<br>
+          Kalau butuh lebih banyak (buat ulang, rate tinggi, tanpa limit) — 
+          <a href="login.html" style="color: var(--accent);">login atau register</a>.
+        </div>
+      </div>
+
+      <div class="alert" id="quick-alert"></div>
+
+      <!-- Container status -->
+      <div id="quick-container">
+        <form id="form-quick">
+          <div class="form-group">
+            <label>
+              <span data-icon="key"></span> Nama Aplikasi
+            </label>
+            <input type="text" id="quick-name" placeholder="mis. my-test-app" required maxlength="30">
+            <div class="hint">
+              <span data-icon="info"></span>
+              Untuk identifikasi key
+            </div>
+          </div>
+
+          <button type="submit" class="block" id="btn-quick">
+            <span data-icon="key"></span> Buat Quick Key
+          </button>
+        </form>
+      </div>
+
+      <!-- HASIL -->
+      <div id="key-result" class="key-display" style="display: none;">
+        <div class="key-label">
+          <span data-icon="lock"></span> API KEY ANDA
+        </div>
+        <div class="key-value" id="key-value"></div>
+        <button class="copy-btn" id="btn-copy-key">
+          <span data-icon="copy"></span> Copy
+        </button>
+        <div class="warning">
+          <span data-icon="warning"></span>
+          <span>Simpan! Hanya muncul sekali. Expired 24 jam atau 130 request.</span>
+        </div>
+      </div>
+
+      <div id="key-info" style="font-size: 12px; color: var(--muted); margin-top: 12px;"></div>
+
+      <!-- Blocked notice -->
+      <div id="quick-blocked" style="display: none;">
+        <div class="blocked-box">
+          <span data-icon="lock"></span>
+          <h3>Quick Key Sudah Dibuat</h3>
+          <p>
+            Anda sudah membuat quick key di browser ini.<br>
+            Untuk membuat key baru, silakan login atau register.
+          </p>
+          <a href="login.html" style="text-decoration: none;">
+            <button class="block">
+              <span data-icon="login"></span> Login / Register
+            </button>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARA PAKAI -->
+    <div class="panel">
+      <h2>
+        <span data-icon="info"></span> Cara Pakai
+      </h2>
+
+      <p style="font-size: 13px; margin-bottom: 12px; color: var(--text-2);"><b>cURL:</b></p>
+      <div class="code-block">curl "https://aniwatch.share.zrok.io/share/anime/yowaki-max-sub-indo" \
+  -H "X-API-Key: YOUR_API_KEY"</div>
+
+      <p style="font-size: 13px; margin: 16px 0 12px; color: var(--text-2);"><b>Python:</b></p>
+      <div class="code-block">import requests
+
+API_KEY = "YOUR_API_KEY"
+BASE = "https://aniwatch.share.zrok.io"
+
+r = requests.get(
+    f"{BASE}/share/anime/yowaki-max-sub-indo",
+    headers={"X-API-Key": API_KEY}
+)
+print(r.json()["data"]["metadata"]["title"])</div>
+
+      <div class="info-box">
+        <span data-icon="info"></span>
+        <div>
+          Quick key punya <b>130 request total</b> dan expired <b>24 jam</b>.
+          Kalau butuh lebih, <a href="login.html" style="color: inherit; text-decoration: underline;">login</a> untuk dapat limit lebih tinggi.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: LOGIN INFO -->
+  <div class="tab-content" id="tab-login-info">
+    <div class="panel">
+      <h2>
+        <span data-icon="login"></span> Sudah Punya Akun?
+      </h2>
+      <p style="color: var(--text-2); font-size: 13px; margin-bottom: 16px;">
+        Login untuk manage API key Anda di dashboard dengan limit lebih tinggi.
+      </p>
+      <a href="login.html" style="text-decoration: none;">
+        <button class="block">
+          <span data-icon="login"></span> Login Sekarang
+        </button>
+      </a>
+      <p style="margin-top: 16px; font-size: 13px; color: var(--muted); text-align: center;">
+        Belum punya akun?
+        <a href="login.html#register" style="color: var(--accent);">Daftar di sini</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="assets/icons.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/app.js"></script>
+<script>
+  // Cek status API
+  API.health().then((data) => {
+    const statusEl = document.getElementById("stat-status");
+    const versionEl = document.getElementById("stat-version");
+    if (data && data.success) {
+      statusEl.textContent = "✅";
+      statusEl.style.color = "var(--success)";
+      versionEl.textContent = data.data.version || "1.0.0";
+    } else {
+      statusEl.textContent = "❌";
+      statusEl.style.color = "var(--error)";
+    }
+  }).catch(() => {
+    document.getElementById("stat-status").textContent = "❌";
+    document.getElementById("stat-status").style.color = "var(--error)";
+  });
+
+  document.getElementById("base-url").textContent = API.baseUrl();
+</script>
+</body>
+</html>

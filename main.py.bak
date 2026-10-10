@@ -1,0 +1,357 @@
+"""
+main.py — Entry point FastAPI AniWatch.
+
+Jalankan:
+    uvicorn main:app --reload
+    uvicorn main:app --host 0.0.0.0 --port 8000
+"""
+import logging
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select, func
+
+from config import settings
+from db.database import init_db, db_info
+from db import get_session
+from db.models import Anime, Episode, DownloadLink, Report, User, ApiKey
+from api.exceptions import register_exception_handlers
+from api.routes import (
+    anime_router,
+    episode_router,
+    search_router,
+    poster_router,
+    season_router,
+    now_router,
+    reports_router,
+    empty_router,
+    linkask_router,
+    system_router,
+    auth_router,
+)
+from api.middleware import RateLimitMiddleware, MethodRestrictorMiddleware
+from security.deps import require_auth
+
+
+# ═══════════════════════════════════════════════════════════
+#  LOGGING
+# ═══════════════════════════════════════════════════════════
+logging.basicConfig(
+    level=getattr(logging, settings.log_level, logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("aniwatch")
+
+
+# ═══════════════════════════════════════════════════════════
+#  LIFESPAN
+# ═══════════════════════════════════════════════════════════
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ─── STARTUP ───
+    logger.info("=" * 60)
+    logger.info("START " + settings.app_name + " v" + settings.app_version)
+    logger.info("=" * 60)
+
+    # Init DB
+    init_db()
+    info = db_info()
+    logger.info("DB    : " + str(info["path"]))
+    logger.info("Table : " + ", ".join(info["tables"]))
+    logger.info("Source: " + str(list(settings.sources.keys())))
+    logger.info("Default: " + settings.default_source)
+
+    # Info cache
+    logger.info("Cache : " + ("ON" if settings.cache_enabled else "OFF"))
+    logger.info("RateLimit: ON")
+
+    logger.info("=" * 60)
+    logger.info("Server: http://localhost:" + str(settings.port))
+    logger.info("Docs  : http://localhost:" + str(settings.port) + "/docs")
+    logger.info("Monitor: http://localhost:" + str(settings.port) + "/monitor")
+    logger.info("=" * 60)
+
+    yield
+
+    # ─── SHUTDOWN ───
+    logger.info("Shutting down...")
+
+
+# ═══════════════════════════════════════════════════════════
+#  APP
+# ═══════════════════════════════════════════════════════════
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description=(
+        "REST API untuk scraping anime dari Otakudesu, Kuramanime, AnimeIndo.\n\n"
+        "**Endpoints**: `/share`, `/auth`, `/system`\n\n"
+        "**Auth**: API Key via header `X-API-Key`\n\n"
+        "**Docs**: `/docs` (Swagger) | `/redoc` (ReDoc) | `/monitor` (Custom)"
+    ),
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+
+# ═══════════════════════════════════════════════════════════
+#  MIDDLEWARE
+# ═══════════════════════════════════════════════════════════
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://aniwatch.share.zrok.io",
+        "http://localhost:3000",
+        "http://localhost:8000"
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=[
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+    ],
+)
+
+# Method restrictor (hanya GET & POST)
+app.add_middleware(
+    MethodRestrictorMiddleware,
+    allowed_methods=settings.allowed_methods_set,
+    excluded_paths=settings.method_excluded_paths_tuple,
+    enabled=True,
+)
+
+# Rate limit
+app.add_middleware(RateLimitMiddleware, enabled=True)
+
+# ═══════════════════════════════════════════════════════════
+#  EXCEPTION HANDLERS
+# ═══════════════════════════════════════════════════════════
+register_exception_handlers(app)
+
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTERS
+# ═══════════════════════════════════════════════════════════
+app.include_router(system_router)
+app.include_router(anime_router)
+app.include_router(episode_router)
+app.include_router(search_router)
+app.include_router(poster_router)
+app.include_router(season_router)
+app.include_router(now_router)
+app.include_router(reports_router)
+app.include_router(empty_router)
+app.include_router(linkask_router)
+app.include_router(auth_router)
+
+
+# ═══════════════════════════════════════════════════════════
+#  CACHE ENDPOINTS
+# ═══════════════════════════════════════════════════════════
+from cache.strategy import cache_stats, clear_all, invalidate_anime
+
+
+@app.get("/cache/stats", tags=["cache"], summary="Statistik cache")
+async def cache_stats_endpoint():
+    """Statistik cache memory + file."""
+    return {
+        "success": True,
+        "data": cache_stats(),
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
+        "error": None,
+    }
+
+
+@app.post("/cache/clear", tags=["cache"], summary="Hapus semua cache")
+async def cache_clear_endpoint():
+    """Hapus semua cache (memory + file)."""
+    result = clear_all()
+    return {
+        "success": True,
+        "data": result,
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
+        "error": None,
+    }
+
+
+@app.post(
+    "/cache/invalidate/{slug}",
+    tags=["cache"],
+    summary="Invalidate cache anime",
+)
+async def cache_invalidate_endpoint(
+    slug: str,
+    source: str = "otakudesu",
+):
+    """Hapus cache untuk 1 anime."""
+    count = invalidate_anime(slug, source)
+    return {
+        "success": True,
+        "data": {"slug": slug, "invalidated_keys": count},
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
+        "error": None,
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+#  RATE LIMIT ENDPOINTS
+# ═══════════════════════════════════════════════════════════
+from security.rate_limit import rate_limit_stats, reset_all_rate_limits
+
+
+@app.get(
+    "/rate-limit/stats",
+    tags=["rate-limit"],
+    summary="Statistik rate limit",
+)
+async def rate_limit_stats_endpoint():
+    """Statistik rate limit (publik)."""
+    return {
+        "success": True,
+        "data": rate_limit_stats(),
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
+        "error": None,
+    }
+
+
+@app.post(
+    "/rate-limit/reset",
+    tags=["rate-limit"],
+    summary="Reset rate limit (admin)",
+)
+async def rate_limit_reset_endpoint(
+    ctx=Depends(require_auth),
+):
+    """Reset semua rate limit (butuh admin)."""
+    if not ctx.is_admin():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    count = reset_all_rate_limits()
+    return {
+        "success": True,
+        "data": {"reset_keys": count},
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
+        "error": None,
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+#  ADMIN ENDPOINTS
+# ═══════════════════════════════════════════════════════════
+@app.get(
+    "/admin/db-info",
+    tags=["admin"],
+    summary="Info database (admin)",
+)
+async def admin_db_info(ctx=Depends(require_auth)):
+    """Detail DB info - butuh admin."""
+    if not ctx.is_admin():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    info = db_info()
+    with get_session() as s:
+        counts = {
+            "anime": s.scalar(select(func.count()).select_from(Anime)) or 0,
+            "episode": s.scalar(select(func.count()).select_from(Episode)) or 0,
+            "download": s.scalar(select(func.count()).select_from(DownloadLink)) or 0,
+            "report": s.scalar(select(func.count()).select_from(Report)) or 0,
+            "user": s.scalar(select(func.count()).select_from(User)) or 0,
+            "api_key": s.scalar(select(func.count()).select_from(ApiKey)) or 0,
+        }
+
+    return {
+        "success": True,
+        "data": {
+            "db": info,
+            "counts": counts,
+        },
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
+        "error": None,
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+#  DOCS MONITORING
+# ═══════════════════════════════════════════════════════════
+DOCS_DIR = Path(__file__).parent / "docs"
+
+if DOCS_DIR.exists():
+    @app.get("/monitor", include_in_schema=False)
+    async def monitor_docs():
+        """Custom monitoring dashboard."""
+        index_file = DOCS_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        return {"error": "docs/index.html tidak ditemukan"}
+
+    app.mount(
+        "/monitor/static",
+        StaticFiles(directory=str(DOCS_DIR)),
+        name="docs_static",
+    )
+
+# ═══════════════════════════════════════════════════════════
+#  WEB PORTAL
+# ═══════════════════════════════════════════════════════════
+WEB_DIR = Path(__file__).parent / "web"
+
+if WEB_DIR.exists():
+    # ─── Serve HTML files ───
+    @app.get("/portal", include_in_schema=False)
+    @app.get("/portal/", include_in_schema=False)
+    async def web_portal():
+        return FileResponse(WEB_DIR / "index.html")
+
+    @app.get("/portal/index.html", include_in_schema=False)
+    async def web_index():
+        return FileResponse(WEB_DIR / "index.html")
+
+    @app.get("/portal/login.html", include_in_schema=False)
+    async def web_login():
+        return FileResponse(WEB_DIR / "login.html")
+
+    @app.get("/portal/dashboard.html", include_in_schema=False)
+    async def web_dashboard():
+        return FileResponse(WEB_DIR / "dashboard.html")
+    @app.get("/portal/detail.html", include_in_schema=False)
+    async def web_detail():
+        return FileResponse(WEB_DIR / "detail.html")
+    @app.get("/portal/license", include_in_schema=False)
+    async def web_license():
+        return FileResponse(WEB_DIR / "license.html")
+
+    # ─── Mount assets ───
+    app.mount(
+        "/portal/assets",
+        StaticFiles(directory=str(WEB_DIR / "assets")),
+        name="web_assets",
+    )
+    app.mount(
+        "/portal/docs",
+        StaticFiles(directory=str(WEB_DIR / "docs")),
+        name="web_docs",
+    )
+# ═══════════════════════════════════════════════════════════
+#  QUICK TEST
+# ═══════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
+        log_level=settings.log_level.lower(),
+    )
