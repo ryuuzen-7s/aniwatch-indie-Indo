@@ -4,9 +4,10 @@
  * Fitur:
  * - Auto-detect base URL
  * - Token via Authorization header (mobile-friendly)
+ * - API Key via X-API-Key header
  * - Credentials include (cookie)
  * - Retry pada network error
- * - Error handling (jangan auto-clear token untuk HTTP_401 generic)
+ * - Handle 200/202/204/401/405/429
  */
 const API = (() => {
   // ═══════════════════════════════════════════════════════════
@@ -16,18 +17,16 @@ const API = (() => {
     baseUrl: localStorage.getItem("aniwatch_base_url")
              || window.location.origin,
     timeout: 30000,
-    retries: 2,              // retry 2× pada network error
-    retryDelay: 1000,        // jeda 1 detik antar retry
-    debug: true,             // log detail
+    retries: 2,
+    retryDelay: 1000,
+    debug: true,
   };
 
   // ═══════════════════════════════════════════════════════════
   //  LOG HELPER
   // ═══════════════════════════════════════════════════════════
   function log(msg, ...args) {
-    if (CONFIG.debug) {
-      console.log("[API]", msg, ...args);
-    }
+    if (CONFIG.debug) console.log("[API]", msg, ...args);
   }
 
   function logError(msg, ...args) {
@@ -41,33 +40,158 @@ const API = (() => {
   // ═══════════════════════════════════════════════════════════
   //  REQUEST HELPER
   // ═══════════════════════════════════════════════════════════
-search: async (q, apiKey) => {
-  const key = apiKey || localStorage.getItem("aniwatch_api_key");
-  const data = await request(
-    `/share/query?q=${encodeURIComponent(q)}`,
-    {
-      headers: key ? { "X-API-Key": key } : {},
-    }
-  );
+  async function request(path, options = {}) {
+    const url = CONFIG.baseUrl + path;
+    const method = options.method || "GET";
 
-  // Handle SEARCH_EMPTY → redirect ke empty page
-  if (
-    !data.success &&
-    data.error &&
-    data.error.code === "SEARCH_EMPTY"
-  ) {
-    const params = new URLSearchParams({
-      q: q,
-      endpoint: "/share/query",
-      agent: JSON.stringify(data.error.details?.agent || {}),
-    });
-    window.location.href = `/error/empty.html?${params}`;
-    return data;
+    const token = localStorage.getItem("aniwatch_token");
+    const apiKey = localStorage.getItem("aniwatch_api_key");
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    };
+
+    // Bearer token (kalau ada)
+    if (token && !headers["Authorization"]) {
+      headers["Authorization"] = "Bearer " + token;
+    }
+
+    // API key (kalau ada & belum di-set)
+    if (apiKey && !headers["X-API-Key"]) {
+      headers["X-API-Key"] = apiKey;
+    }
+
+    log(`${method} ${url}`);
+    log("  → Token:", token ? token.slice(0, 20) + "..." : "(none)");
+    log("  → API Key:", apiKey ? apiKey.slice(0, 20) + "..." : "(none)");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
+
+    // ═══ RETRY LOOP ═══
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= CONFIG.retries; attempt++) {
+      try {
+        const res = await fetch(url, {
+          ...options,
+          credentials: "include",
+          headers,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        log(`  ← Status ${res.status}`);
+
+        // Parse JSON
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          logError("  ← Bukan JSON:", e.message);
+          data = {
+            success: false,
+            error: {
+              code: "NOT_JSON",
+              message: "Response bukan JSON",
+              status: res.status,
+            },
+          };
+        }
+
+        // Kalau HTTP error & tidak ada error object
+        if (!res.ok && !data.error) {
+          data.error = {
+            code: "HTTP_" + res.status,
+            message: res.statusText || "HTTP Error",
+            status: res.status,
+          };
+        }
+
+        // ═══ 401 Unauthorized ═══
+        if (res.status === 401 && data.error) {
+          const code = data.error.code || "";
+
+          const shouldClear = (
+            code === "AUTH_EXPIRED" ||
+            code === "TOKEN_INVALID" ||
+            code === "SESSION_EXPIRED" ||
+            code === "HTTP_401"
+          );
+
+          if (shouldClear) {
+            warn("Token invalid/expired, clearing...");
+            localStorage.removeItem("aniwatch_token");
+            localStorage.removeItem("aniwatch_user");
+          }
+
+          // Kalau request ke /share/* → redirect ke portal index
+          if (path.startsWith("/share/") &&
+              !window.location.pathname.includes("/portal/")) {
+            const returnUrl = encodeURIComponent(window.location.href);
+            window.location.href = `/portal/index.html?return=${returnUrl}`;
+          }
+        }
+
+        // ═══ 405 Method Not Allowed ═══
+        if (res.status === 405) {
+          warn("Method tidak diizinkan:", method, path);
+        }
+
+        // ═══ 429 Rate Limit ═══
+        if (res.status === 429) {
+          const retryAfter = res.headers.get("Retry-After") || "60";
+          warn(`Rate limit. Retry after ${retryAfter}s`);
+          if (data.error) {
+            data.error.retry_after = parseInt(retryAfter, 10);
+          }
+        }
+
+        return data;
+
+      } catch (err) {
+        clearTimeout(timeoutId);
+        lastError = err;
+
+        if (err.name === "AbortError") {
+          logError(`  ← TIMEOUT (${CONFIG.timeout}ms)`);
+          return {
+            success: false,
+            error: { code: "TIMEOUT", message: "Request timeout", status: 408 },
+          };
+        }
+
+        logError(`  ← Network error (attempt ${attempt + 1}):`, err.message);
+
+        if (attempt < CONFIG.retries) {
+          warn(`  → Retry dalam ${CONFIG.retryDelay}ms...`);
+          await new Promise((r) => setTimeout(r, CONFIG.retryDelay));
+          continue;
+        }
+
+        return {
+          success: false,
+          error: {
+            code: "NETWORK",
+            message: err.message || "Network error",
+            status: 0,
+          },
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: {
+        code: "UNKNOWN",
+        message: lastError?.message || "Unknown error",
+        status: 0,
+      },
+    };
   }
 
-  return data;
-}
-return data;
   // ═══════════════════════════════════════════════════════════
   //  PUBLIC API
   // ═══════════════════════════════════════════════════════════
@@ -121,11 +245,8 @@ return data;
       }),
 
     listKeys: (apiKey) => {
-      // Kalau login (ada token) → pakai Bearer saja
       const hasToken = !!localStorage.getItem("aniwatch_token");
       if (hasToken) return request("/keys", {});
-
-      // Fallback: API key (anonymous)
       if (apiKey) return request("/keys", { headers: { "X-API-Key": apiKey } });
       return request("/keys", {});
     },
@@ -140,7 +261,7 @@ return data;
       return request(`/keys/${keyId}`, { method: "DELETE" });
     },
 
-    // ─── Data ───
+    // ─── Data Anime ───
     getAnime: (slug, apiKey) =>
       request(`/share/anime/${slug}`, {
         headers: apiKey ? { "X-API-Key": apiKey } : {},
@@ -156,13 +277,91 @@ return data;
         headers: apiKey ? { "X-API-Key": apiKey } : {},
       }),
 
-    search: (q, apiKey) =>
-      request(`/share/query?q=${encodeURIComponent(q)}`, {
+    // ─── Search (dengan 202/204 handling) ───
+    search: async (q, apiKey) => {
+      const key = apiKey || localStorage.getItem("aniwatch_api_key");
+      const data = await request(
+        `/share/query?q=${encodeURIComponent(q)}`,
+        {
+          headers: key ? { "X-API-Key": key } : {},
+        }
+      );
+
+      // Handle 202 (processing)
+      if (data.success && data.data && data.data.status === "processing") {
+        const retryAfter = data.data.agent?.retry_after || 30;
+        return {
+          ...data,
+          status: "processing",
+          retryAfter,
+          pollUrl: data.data.agent?.poll_url,
+        };
+      }
+
+      // Handle 202 (already processing)
+      if (data.success && data.data && data.data.status === "already_processing") {
+        const retryAfter = data.data.agent?.retry_after || 15;
+        return {
+          ...data,
+          status: "already_processing",
+          retryAfter,
+          pollUrl: data.data.agent?.poll_url,
+        };
+      }
+
+      // Handle 204 (no content)
+      if (!data.success && data.error && data.error.code === "NO_RESULT") {
+        return {
+          ...data,
+          status: "not_found",
+        };
+      }
+
+      // Handle 200 (success)
+      if (data.success && data.data && data.data.results) {
+        return {
+          ...data,
+          status: "ready",
+        };
+      }
+
+      return data;
+    },
+
+    // ─── Now ───
+    now: (apiKey) =>
+      request("/share/now", {
         headers: apiKey ? { "X-API-Key": apiKey } : {},
       }),
 
-    now: (apiKey) =>
-      request("/share/now", {
+    // ─── Season ───
+    season: (season, apiKey) =>
+      request(`/share/season/${season}`, {
+        headers: apiKey ? { "X-API-Key": apiKey } : {},
+      }),
+
+    // ─── Poster ───
+    getPoster: (slug, apiKey) =>
+      request(`/share/posterid/${slug}`, {
+        headers: apiKey ? { "X-API-Key": apiKey } : {},
+      }),
+
+    // ─── Report ───
+    reportError: (slug, body, apiKey) =>
+      request(`/share/errorid/${slug}`, {
+        method: "POST",
+        headers: apiKey ? { "X-API-Key": apiKey } : {},
+        body: JSON.stringify(body),
+      }),
+
+    // ─── Scrape Status ───
+    scrapeStatus: (slug, apiKey) =>
+      request(`/share/scrape-status/${slug}`, {
+        headers: apiKey ? { "X-API-Key": apiKey } : {},
+      }),
+
+    scrapeJobs: (apiKey) =>
+      request("/share/scrape-jobs", {
         headers: apiKey ? { "X-API-Key": apiKey } : {},
       }),
 

@@ -103,3 +103,7 @@ test/fixtures/*.html
 !test/fixtures/sample_anime.json
 # ─── Tunnel Tools ───
 zrok.exe
+# ─── MD file ───
+MD/tmp/
+# ─── Miscellaneous ───
+*.bak

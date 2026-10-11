@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session
 from api.deps import get_db
 from api.models.season import SeasonResponse, SeasonAnimeItem
 from api.models.common import success_response
-from api.services.season_service import get_anime_by_season, parse_season, SEASON_MONTHS
+from api.services.season_service import (
+    get_anime_by_season,
+    parse_season,
+    SEASON_MONTHS,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +44,6 @@ async def get_season_endpoint(
     t0 = time.time()
 
     name, year = parse_season(season)
-
     animes = get_anime_by_season(db, season, limit=limit)
 
     items = [
@@ -58,10 +61,9 @@ async def get_season_endpoint(
         for a in animes
     ]
 
-    # Month range
     month_range = None
     if name and name in SEASON_MONTHS:
-        months = SEASON_MONTHS[name][:3]  # Ambil 3 singkatan
+        months = SEASON_MONTHS[name][:3]
         month_range = "-".join(m.upper() for m in months)
 
     data = SeasonResponse(

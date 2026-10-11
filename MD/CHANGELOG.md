@@ -145,6 +145,23 @@ GET /share/query?q=naruto&wait=true
 
 ---
 
+## [1.0.8] — 2026-10-11 — Search Service Rewrite
+
+### 🔧 Rewrite — `api/services/search_service.py`
+
+- Tulis ulang total untuk fix ImportError & parser yang lebih baik
+- **Tambah:** `is_scrape_running()`, `wait_for_scrape()`, `get_running_slugs()`
+- **Tambah:** `clear_scrape_jobs()`, `cleanup_done_jobs()`
+- **Fix:** Parser `search_live()` — handle `<h2><a>` + extract parent slug dari episode
+- **Fix:** `trigger_agent_worker()` — retry DB lock + global lock
+- **Improve:** `list_scrape_jobs()` — tambah counter done & error
+
+### 🐛 Fixed
+
+- **ImportError:** `cannot import name 'wait_for_scrape'` — sudah fix
+- **Parser search_live:** Sebelum 0 hasil, sekarang return hasil
+- **DB lock:** Retry 3x di agent worker
+
 ## [1.0.7] — 2026-10-10 — Database Lock Fix & DB Layer Rewrite
 
 ### 🐛 Fixed — Database Lock
