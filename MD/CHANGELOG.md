@@ -6,8 +6,30 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/),
 versi mengikuti [Semantic Versioning](https://semver.org/).
 
 ---
+## [1.1.1] — 2026-10-12 — Task Scheduler Update
 
-## [1.1.0] — 2026-10-XX — Search → Agent → Response Flow (Planned)
+### 🔧 Changed
+
+- **`agent/install_task.bat`** — Interval 6 → **12 jam** (hemat CPU)
+  - Tambah info command (query/run/uninstall)
+- **`agent/cron_daily.bat`** — Tambah **log redirect** + **exit code**
+  - Log ke `agent/logs/task_YYYYMMDD.log`
+  - Auto-create folder log
+- **`agent/cron-hourly.bat`** — Tambah log redirect
+- **`agent/uninstall_task.bat`** — Rename dari `uinstall_task.bat`
+  - Fix typo
+  - Header lebih jelas
+
+### 📊 Behavior
+
+- Task jalan tiap **12 jam** (2x sehari)
+- Log file per tanggal di `agent/logs/`
+- Exit code di-track Task Scheduler
+- Manual trigger via `schtasks /Run /TN "AniWatchAgent"`
+
+---
+
+## [1.1.0] — 2026-10-11 — Search → Agent → Response Flow (Planned)
 
 ### 🎯 Planned — Search Flow v2
 

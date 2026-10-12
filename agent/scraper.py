@@ -1,5 +1,5 @@
 """
-agent/scraper.py - Core: scrape 1 anime & simpan ke DB.
+agent/scraper.py — Core: scrape 1 anime & simpan ke DB.
 """
 import sys
 import time
@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-# Path fix: import dari root project
+# Path fix
 ROOT = Path(__file__).parent.parent.resolve()
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -82,8 +82,9 @@ def scrape_one(
         )
 
         # Validasi
-        if not data.get("metadata", {}).get("title"):
-            raise ValueError("Hasil scrape kosong (metadata.title kosong)")
+        title = data.get("metadata", {}).get("title", "")
+        if not title or title.startswith("Otakudesu - Download"):
+            raise ValueError(f"Hasil scrape kosong (title='{title[:60]}')")
 
         counters = save_scrape_result(data)
         result["status"] = "ok"

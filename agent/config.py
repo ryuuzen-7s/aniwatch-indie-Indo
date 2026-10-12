@@ -1,5 +1,5 @@
 """
-agent/config.py - Loader config dari agent/.env.
+agent/config.py — Loader config dari agent/.env.
 """
 import os
 from pathlib import Path
@@ -46,6 +46,11 @@ class AgentConfig:
 
     # DB
     db_path: str = "../data/db/aniwatch.db"
+
+    # ─── MODE ───
+    mode: str = "hybrid"                    # "caller" | "follow_env" | "hybrid"
+    caller_priority: bool = True
+    watcher_interval: int = 60
 
 
 def load_config() -> AgentConfig:
@@ -106,6 +111,10 @@ def load_config() -> AgentConfig:
         log_max_bytes=get_int("LOG_MAX_BYTES", 5_242_880),
         log_backup_count=get_int("LOG_BACKUP_COUNT", 5),
         db_path=raw.get("DB_PATH", "../data/db/aniwatch.db"),
+        # Mode config
+        mode=raw.get("MODE", "hybrid").lower(),
+        caller_priority=get_bool("CALLER_PRIORITY", True),
+        watcher_interval=get_int("WATCHER_INTERVAL", 60),
     )
 
 
@@ -114,7 +123,6 @@ _config: Optional[AgentConfig] = None
 
 
 def get_config() -> AgentConfig:
-    """Ambil config (cached)."""
     global _config
     if _config is None:
         _config = load_config()
@@ -122,7 +130,6 @@ def get_config() -> AgentConfig:
 
 
 def reload_config() -> AgentConfig:
-    """Force reload."""
     global _config
     _config = load_config()
     return _config
@@ -133,15 +140,13 @@ if __name__ == "__main__":
     print("=" * 60)
     print("  AGENT CONFIG")
     print("=" * 60)
+    print(f"  Mode          : {cfg.mode}")
+    print(f"  Caller prior  : {cfg.caller_priority}")
+    print(f"  Watch interval: {cfg.watcher_interval}s")
     print(f"  Otakudesu URL : {cfg.otakudesu_url}")
     print(f"  Slugs         : {len(cfg.slugs)}")
     for i, s in enumerate(cfg.slugs, 1):
         print(f"    [{i}] {s}")
     print(f"  Scrape ongoing: {cfg.scrape_ongoing}")
-    print(f"  Ongoing limit : {cfg.ongoing_limit}")
-    print(f"  Follow all ep : {cfg.follow_all_episodes}")
-    print(f"  Skip existing : {cfg.skip_existing}")
     print(f"  Interval      : {cfg.interval_hours} jam")
-    print(f"  Cron time     : {cfg.cron_time}")
-    print(f"  Timezone      : {cfg.timezone}")
     print("=" * 60)

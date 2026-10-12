@@ -1,15 +1,26 @@
 @echo off
 REM ============================================================
-REM  AniWatch Agent - Hourly Scrape (lebih cepat)
+REM  AniWatch Agent - Hourly (skip ongoing)
 REM ============================================================
 
 cd /d "%~dp0"
 cd ..
 
-echo ============================================================
-echo   AniWatch Agent Hourly - %date% %time%
-echo ============================================================
+if not exist "agent\logs" mkdir "agent\logs"
 
-python agent\runner.py --skip-ongoing
+set LOG_FILE=agent\logs\hourly_%date:~-4%%date:~3,2%%date:~0,2%.log
+set LOG_FILE=%LOG_FILE: =_%
 
-echo Selesai.
+echo ============================================================ >> "%LOG_FILE%"
+echo   AniWatch Agent Hourly - %date% %time% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+python agent\coordinator.py --once --skip-ongoing >> "%LOG_FILE%" 2>&1
+
+set EXITCODE=%errorlevel%
+
+echo. >> "%LOG_FILE%"
+echo Exit code: %EXITCODE% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+exit /b %EXITCODE%

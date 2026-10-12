@@ -1,9 +1,7 @@
 """
-agent/cron.py - Internal scheduler (APScheduler).
+agent/cron.py — Scheduler (APScheduler) untuk hybrid mode.
 
 Jalankan: python agent/cron.py
-
-Ini akan jalan terus di background, scrape tiap INTERVAL_HOURS.
 """
 import sys
 import logging
@@ -21,49 +19,47 @@ if str(AGENT_DIR) not in sys.path:
 try:
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.interval import IntervalTrigger
-    from apscheduler.triggers.cron import CronTrigger
 except ImportError:
     print("ERROR: APScheduler tidak terinstall")
     print("Install: pip install apscheduler")
     sys.exit(1)
 
 from agent.config import get_config
-from agent.runner import run, setup_logging
+from agent.coordinator import run_hybrid
+from agent.logger import setup_agent_logging
 
 
 def main():
     cfg = get_config()
 
-    # Setup logging
     log_dir = AGENT_DIR / cfg.log_dir
-    log_path = setup_logging(
-        log_dir, cfg.log_file, cfg.log_level,
+    log_path = setup_agent_logging(
+        log_dir, "cron.log", cfg.log_level,
         cfg.log_max_bytes, cfg.log_backup_count,
     )
 
     logger = logging.getLogger("agent.cron")
     logger.info("=" * 70)
-    logger.info("  ANIWATCH AGENT - SCHEDULER")
+    logger.info("  ANIWATCH AGENT - SCHEDULER (HYBRID MODE)")
     logger.info("=" * 70)
     logger.info(f"  Interval : {cfg.interval_hours} jam")
     logger.info(f"  Timezone : {cfg.timezone}")
+    logger.info(f"  Mode     : {cfg.mode}")
     logger.info(f"  Log      : {log_path}")
     logger.info("=" * 70)
 
     scheduler = BlockingScheduler(timezone=cfg.timezone)
 
-    # Job: scrape
     scheduler.add_job(
-        lambda: run(skip_ongoing=False),
+        lambda: run_hybrid(skip_ongoing=False),
         trigger=IntervalTrigger(hours=cfg.interval_hours),
-        id="scrape_job",
-        name=f"Scrape setiap {cfg.interval_hours} jam",
+        id="hybrid_job",
+        name=f"Hybrid scrape setiap {cfg.interval_hours} jam",
         max_instances=1,
         coalesce=True,
-        next_run_time=datetime.now(),  # jalankan langsung saat start
+        next_run_time=datetime.now(),
     )
 
-    # Print jadwal
     for job in scheduler.get_jobs():
         logger.info(f"  Job: {job.name}")
         logger.info(f"  Next: {job.next_run_time}")

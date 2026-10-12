@@ -1,17 +1,29 @@
 @echo off
 REM ============================================================
-REM  AniWatch Agent - Daily Scrape
+REM  AniWatch Agent - Daily Hybrid Scrape (Task Scheduler)
 REM ============================================================
 
 cd /d "%~dp0"
 cd ..
 
-echo ============================================================
-echo   AniWatch Agent - %date% %time%
-echo ============================================================
+REM ─── Buat folder log kalau belum ada ───
+if not exist "agent\logs" mkdir "agent\logs"
 
-python agent\runner.py
+REM ─── Log file dengan tanggal ───
+set LOG_FILE=agent\logs\task_%date:~-4%%date:~3,2%%date:~0,2%.log
+set LOG_FILE=%LOG_FILE: =_%
 
-echo.
-echo Selesai. Tekan tombol apa saja untuk close...
-REM pause
+echo ============================================================ >> "%LOG_FILE%"
+echo   AniWatch Agent - %date% %time% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+REM ─── Jalankan coordinator (hybrid mode) ───
+python agent\coordinator.py --once >> "%LOG_FILE%" 2>&1
+
+set EXITCODE=%errorlevel%
+
+echo. >> "%LOG_FILE%"
+echo Exit code: %EXITCODE% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+exit /b %EXITCODE%

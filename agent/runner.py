@@ -1,17 +1,20 @@
 """
-agent/runner.py - Runner: scrape semua slug dari config + ongoing.
+agent/runner.py — Opsi 2: Follow .env mode.
+
+Scrape slug dari config + auto ongoing.
 
 Jalankan:
-    python agent/runner.py              # scrape semua slug
-    python agent/runner.py --dry-run    # cek dulu
-    python agent/runner.py --slug xxx   # scrape 1 slug
+    python agent/runner.py              # semua slug
+    python agent/runner.py --dry-run
+    python agent/runner.py --slug xxx
+    python agent/runner.py --skip-ongoing
 """
 import sys
 import time
 import logging
 import argparse
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Path fix
 ROOT = Path(__file__).parent.parent.resolve()
@@ -24,54 +27,15 @@ if str(AGENT_DIR) not in sys.path:
 
 from agent.config import get_config
 from agent.scraper import scrape_one
+from agent import state
+from agent.logger import setup_agent_logging
 from core.fetcher import fetch
-
-
-# ═══════════════════════════════════════════════════════════
-#  LOGGING SETUP
-# ═══════════════════════════════════════════════════════════
-def setup_logging(log_dir: Path, log_file: str, level: str,
-                  max_bytes: int, backup_count: int):
-    """Setup logging dengan rotasi file."""
-    from logging.handlers import RotatingFileHandler
-
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / log_file
-
-    logger = logging.getLogger()
-    logger.setLevel(getattr(logging, level, logging.INFO))
-
-    # Hapus handler lama
-    logger.handlers.clear()
-
-    # Console handler
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    ch.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s",
-                                      datefmt="%H:%M:%S"))
-    logger.addHandler(ch)
-
-    # File handler (rotasi)
-    fh = RotatingFileHandler(
-        log_path,
-        maxBytes=max_bytes,
-        backupCount=backup_count,
-        encoding="utf-8",
-    )
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    ))
-    logger.addHandler(fh)
-
-    return log_path
 
 
 # ═══════════════════════════════════════════════════════════
 #  FETCH ONGOING SLUGS
 # ═══════════════════════════════════════════════════════════
 def fetch_ongoing_slugs(limit: int = 20) -> list:
-    """Ambil slug anime on-going dari Otakudesu."""
     logger = logging.getLogger(__name__)
     logger.info("Fetch daftar on-going dari Otakudesu...")
 
@@ -114,38 +78,35 @@ def run(
     single_slug: str = None,
     skip_ongoing: bool = False,
 ):
-    """Jalankan agent."""
+    """Jalankan follow_env mode."""
     cfg = get_config()
 
-    # Setup logging
     log_dir = AGENT_DIR / cfg.log_dir
-    log_path = setup_logging(
-        log_dir, cfg.log_file, cfg.log_level,
+    log_path = setup_agent_logging(
+        log_dir, "agent.log", cfg.log_level,
         cfg.log_max_bytes, cfg.log_backup_count,
     )
 
     logger = logging.getLogger("agent.runner")
 
     logger.info("=" * 70)
-    logger.info(f"  ANIWATCH AGENT RUN — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"  AGENT FOLLOW_ENV — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 70)
     logger.info(f"  Log file: {log_path}")
 
     # Kumpulkan slugs
     slugs = []
-    sources = {}  # slug -> "config" | "ongoing"
+    sources = {}
 
     if single_slug:
         slugs = [single_slug]
         sources[single_slug] = "cli"
     else:
-        # 1. Dari config
         for s in cfg.slugs:
             if s not in slugs:
                 slugs.append(s)
                 sources[s] = "config"
 
-        # 2. Dari ongoing
         if cfg.scrape_ongoing and not skip_ongoing:
             ongoing = fetch_ongoing_slugs(cfg.ongoing_limit)
             for s in ongoing:
@@ -172,6 +133,18 @@ def run(
     fails = []
 
     for i, slug in enumerate(slugs, 1):
+        # ─── Cek caller prioritas ───
+        if cfg.caller_priority and state.is_caller_running():
+            logger.info(f"[Runner] Caller prioritas, pause follow_env...")
+            state.pause_follow_env()
+
+            # Tunggu caller selesai
+            while state.is_caller_running():
+                time.sleep(1)
+
+            logger.info(f"[Runner] Caller selesai, resume follow_env...")
+            state.resume_follow_env()
+
         logger.info(f"[{i}/{total}] Scrape: {slug} ({sources[slug]})")
 
         res = scrape_one(
@@ -195,7 +168,6 @@ def run(
             stats["fail"] += 1
             fails.append({"slug": slug, "error": res["error"]})
 
-        # Jeda
         if i < total:
             time.sleep(cfg.delay_between)
 
@@ -219,13 +191,10 @@ def run(
 #  CLI
 # ═══════════════════════════════════════════════════════════
 def main():
-    ap = argparse.ArgumentParser(description="AniWatch Agent Runner")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="Cek daftar slug tanpa scrape")
-    ap.add_argument("--slug", type=str, default=None,
-                    help="Scrape 1 slug saja")
-    ap.add_argument("--skip-ongoing", action="store_true",
-                    help="Skip auto-ongoing")
+    ap = argparse.ArgumentParser(description="AniWatch Agent Runner (Follow .env)")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--slug", type=str, default=None)
+    ap.add_argument("--skip-ongoing", action="store_true")
     args = ap.parse_args()
 
     try:
