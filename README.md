@@ -2,7 +2,7 @@
 
 REST API untuk scraping anime dari Otakudesu, Kuramanime, AnimeIndo.
 
-**Status:** ✅ Active · **Version:** 1.0.7 · **License:** Anicorporation.img License v1.0
+**Status:** ✅ Active · **Version:** 1.1.1 · **License:** Anicorporation.img License v1.0
 
 ---
 
