@@ -78,7 +78,7 @@ license:
 
 ---
 
-## 1️⃣ Informasi Organisasi
+## 1 Informasi Organisasi
 
 ### 🏢 Organisasi Lama
 
@@ -103,7 +103,7 @@ license:
 
 ---
 
-## 2️⃣ Digital Signature
+## 2 Digital Signature
 
 ### 🔏 Signature Blocks
 
@@ -162,7 +162,7 @@ license:
 
 ---
 
-## 3️⃣ Saksi Digital
+## 3 Saksi Digital
 
 ### 👥 Saksi Organisasi Lama
 
@@ -210,7 +210,7 @@ license:
 
 ---
 
-## 4️⃣ Hash Verifikasi
+## 4 Hash Verifikasi
 
 ### 🔐 SHA-256 Hash
 
@@ -296,7 +296,7 @@ python tools\verify_copyright.py
 
 ---
 
-## 5️⃣ Digital Watermark
+## 5 Digital Watermark
 
 ```
 ╔══════════════════════════════════════════════════════════╗
@@ -318,7 +318,7 @@ python tools\verify_copyright.py
 
 ---
 
-## 6️⃣ Blockchain-Ready Record
+## 6 Blockchain-Ready Record
 
 ### 📦 JSON Record (untuk integrasi blockchain / IPFS)
 
@@ -394,42 +394,7 @@ python tools\verify_copyright.py
 
 ---
 
-## 7️⃣ QR Code Verifikasi
-
-```
-┌─────────────────────────┐
-│  ███████████████████    │
-│  █                 █    │
-│  █   ANICORP.IMG   █    │
-│  █   ───────────   █    │
-│  █   AniWatch      █    │
-│  █   ©2026         █    │
-│  █                 █    │
-│  ███████████████████    │
-│                         │
-│  Scan untuk verifikasi  │
-└─────────────────────────┘
-```
-
-**Data QR:** `https://aniwatch.share.zrok.io/copyright?id=ACI-CR-2026-ANIWATCH-001`
-
-*(QR code di atas ilustrasi — untuk generate QR asli, pakai `qrcode` Python library)*
-
-### Script Generate QR:
-
-```python
-"""generate_qr.py — Generate QR code untuk copyright."""
-import qrcode
-
-data = "https://aniwatch.share.zrok.io/copyright?id=ACI-CR-2026-ANIWATCH-001"
-img = qrcode.make(data)
-img.save("copyright_qr.png")
-print("QR saved: copyright_qr.png")
-```
-
----
-
-## 8️⃣ Timestamp Verification
+##  Timestamp Verification
 
 | Event | Timestamp (UTC) | Hash |
 |-------|----------------|------|
@@ -440,7 +405,7 @@ print("QR saved: copyright_qr.png")
 
 ---
 
-## 9️⃣ Chain of Custody
+## 7 Chain of Custody
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -467,7 +432,7 @@ print("QR saved: copyright_qr.png")
 
 ---
 
-## 🔟 Pernyataan Digital
+## 8 Pernyataan Digital
 
 > Saya, **Anikuze Ryuuzen**, sebagai **Developer & License Creator** dari **Anicorporation.img**, dengan ini menyatakan bahwa:
 >
