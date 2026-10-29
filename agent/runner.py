@@ -1,13 +1,5 @@
 """
 agent/runner.py — Opsi 2: Follow .env mode.
-
-Scrape slug dari config + auto ongoing.
-
-Jalankan:
-    python agent/runner.py              # semua slug
-    python agent/runner.py --dry-run
-    python agent/runner.py --slug xxx
-    python agent/runner.py --skip-ongoing
 """
 import sys
 import time
@@ -15,6 +7,7 @@ import logging
 import argparse
 from pathlib import Path
 from datetime import datetime, timezone
+from dotenv import dotenv_values, set_key
 
 # Path fix
 ROOT = Path(__file__).parent.parent.resolve()
@@ -30,6 +23,46 @@ from agent.scraper import scrape_one
 from agent import state
 from agent.logger import setup_agent_logging
 from core.fetcher import fetch
+
+
+# ═══════════════════════════════════════════════════════════
+#  AUTO SAVE SLUG (MAX 20, ANTI DUPLIKAT, FIFO)
+# ═══════════════════════════════════════════════════════════
+def save_slugs_to_env(new_slugs: list):
+    """Simpan slug baru ke agent/.env (Maksimal 20, skip duplikat)."""
+    env_file = AGENT_DIR / ".env"
+    if not env_file.exists():
+        return
+
+    raw = dotenv_values(env_file)
+    
+    # 1. Kumpulkan slug yang sudah ada
+    existing = []
+    for key, val in raw.items():
+        if key and key.startswith("SLUG_") and val:
+            existing.append(val.strip())
+
+    # 2. Filter: Hanya ambil yang belum ada di .env
+    to_add = []
+    for slug in new_slugs:
+        if slug not in existing and slug not in to_add:
+            to_add.append(slug)
+
+    if not to_add:
+        return  # Tidak ada slug baru
+
+    # 3. Gabungkan dan batasi maksimal 20 (FIFO: buang yang paling lama)
+    combined = existing + to_add
+    if len(combined) > 20:
+        combined = combined[-20:]  # Ambil 20 terakhir
+
+    # 4. Tulis ulang SLUG_1 sampai SLUG_20 ke .env
+    for i, slug in enumerate(combined, 1):
+        set_key(env_file, f"SLUG_{i}", slug)
+
+    logging.getLogger("agent.runner").info(
+        f"Auto-save: {len(to_add)} slug baru. Total sekarang: {len(combined)}/20"
+    )
 
 
 # ═══════════════════════════════════════════════════════════
@@ -67,6 +100,8 @@ def fetch_ongoing_slugs(limit: int = 20) -> list:
         slugs = slugs[:limit]
 
     logger.info(f"Ditemukan {len(slugs)} anime on-going")
+    save_slugs_to_env(slugs)
+
     return slugs
 
 
@@ -78,7 +113,6 @@ def run(
     single_slug: str = None,
     skip_ongoing: bool = False,
 ):
-    """Jalankan follow_env mode."""
     cfg = get_config()
 
     log_dir = AGENT_DIR / cfg.log_dir
@@ -94,7 +128,6 @@ def run(
     logger.info("=" * 70)
     logger.info(f"  Log file: {log_path}")
 
-    # Kumpulkan slugs
     slugs = []
     sources = {}
 
@@ -127,38 +160,31 @@ def run(
             logger.info(f"  [{i}/{total}] {s} ({sources[s]})")
         return
 
-    # Scrape
     t_start = time.time()
     stats = {"ok": 0, "skip": 0, "fail": 0}
     fails = []
 
     for i, slug in enumerate(slugs, 1):
-        # ─── Cek caller prioritas ───
         if cfg.caller_priority and state.is_caller_running():
             logger.info(f"[Runner] Caller prioritas, pause follow_env...")
             state.pause_follow_env()
-
-            # Tunggu caller selesai
             while state.is_caller_running():
                 time.sleep(1)
-
             logger.info(f"[Runner] Caller selesai, resume follow_env...")
             state.resume_follow_env()
 
         logger.info(f"[{i}/{total}] Scrape: {slug} ({sources[slug]})")
 
+        # Menggunakan follow_all=True memastikan semua episode diambil, bukan cuma eps 1
         res = scrape_one(
             slug,
-            follow_all=cfg.follow_all_episodes,
+            follow_all=True, 
             skip_existing=cfg.skip_existing,
         )
 
         if res["status"] == "ok":
             c = res["counters"]
-            logger.info(
-                f"    OK ({res['duration']:.1f}s) — "
-                f"{c['anime']} anime, {c['episodes']} ep, {c['downloads']} dl"
-            )
+            logger.info(f"    OK ({res['duration']:.1f}s) — {c['anime']} anime, {c['episodes']} ep, {c['downloads']} dl")
             stats["ok"] += 1
         elif res["status"] == "skip":
             logger.info(f"    SKIP — {res['error']}")
@@ -171,40 +197,28 @@ def run(
         if i < total:
             time.sleep(cfg.delay_between)
 
-    # Ringkasan
     dt = time.time() - t_start
     logger.info("=" * 70)
     logger.info(f"  SELESAI — {dt:.1f}s")
     logger.info(f"  OK   : {stats['ok']}")
     logger.info(f"  SKIP : {stats['skip']}")
     logger.info(f"  FAIL : {stats['fail']}")
-    if fails:
-        logger.info("  Gagal:")
-        for f in fails:
-            logger.info(f"    - {f['slug']}: {f['error'][:80]}")
     logger.info("=" * 70)
 
     return stats
 
 
-# ═══════════════════════════════════════════════════════════
-#  CLI
-# ═══════════════════════════════════════════════════════════
 def main():
-    ap = argparse.ArgumentParser(description="AniWatch Agent Runner (Follow .env)")
+    ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--slug", type=str, default=None)
     ap.add_argument("--skip-ongoing", action="store_true")
     args = ap.parse_args()
 
     try:
-        run(
-            dry_run=args.dry_run,
-            single_slug=args.slug,
-            skip_ongoing=args.skip_ongoing,
-        )
+        run(dry_run=args.dry_run, single_slug=args.slug, skip_ongoing=args.skip_ongoing)
     except KeyboardInterrupt:
-        print("\n\nInterrupted by user")
+        print("\nInterrupted by user")
     except Exception as e:
         logging.exception(f"Fatal error: {e}")
 

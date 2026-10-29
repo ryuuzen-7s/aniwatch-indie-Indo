@@ -10,7 +10,7 @@ from config import settings
 from db import get_session, db_info
 from db.models import Anime, Episode, DownloadLink, Report
 
-
+from fastapi.responses import RedirectResponse
 router = APIRouter(tags=["system"])
 
 
@@ -38,6 +38,7 @@ async def root():
                 "POST /share/linkask/{slug}",
                 "GET  /health",
                 "GET  /stats",
+                "GET  /me",
             ],
         },
         "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
@@ -89,3 +90,16 @@ async def stats():
         "meta": {"timestamp": datetime.now(timezone.utc).isoformat()},
         "error": None,
     }
+
+
+# ... (kode root, health, stats yang sudah ada) ...
+
+@router.get("/me", summary="Redirect ke GitHub Developer", include_in_schema=False)
+async def redirect_to_github():
+    """
+    Redirect langsung ke profil GitHub developer.
+    Status: 302 Found
+    """
+    # Ganti URL di bawah ini dengan URL GitHub kamu
+    github_url = "https://github.com/AnikuzeRyuuzen" 
+    return RedirectResponse(url=github_url, status_code=302)

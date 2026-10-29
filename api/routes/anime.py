@@ -40,6 +40,7 @@ async def get_anime_endpoint(
     source: Optional[str] = Query(None, description="Source: otakudesu | kuramanime | animeindo"),
     refresh: bool = Query(False, description="Paksa re-scrape"),
     include_episodes: bool = Query(False, description="Sertakan daftar episode"),
+    episode_limit: Optional[int] = Query(10, ge=1, le=20, description="Limit jumlah episode (default semua)"),
     db: Session = Depends(get_db),
 ):
     """
@@ -49,6 +50,7 @@ async def get_anime_endpoint(
     - **source**: source provider (default dari config)
     - **refresh**: paksa re-scrape meski sudah ada di DB
     - **include_episodes**: sertakan daftar episode
+    - **episode_limit**: batas jumlah episode yang ditampilkan
     """
     t0 = time.time()
 
@@ -62,7 +64,7 @@ async def get_anime_endpoint(
 
     # Build response
     if include_episodes:
-        episodes = get_episodes(db, anime.id)
+        episodes = get_episodes(db, anime.id, limit=episode_limit)
         data = build_anime_detail(anime, episodes)
     else:
         ep_count = count_episodes(db, anime.id)

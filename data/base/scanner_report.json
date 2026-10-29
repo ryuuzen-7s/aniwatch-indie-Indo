@@ -1,11 +1,11 @@
 {
-  "scanned_at": "2026-10-10T12:02:05.073073",
+  "scanned_at": "2026-10-28T23:17:11.048528",
   "root": "A:\\aniwatch",
   "stats": {
-    "total_files": 11,
-    "total_folders": 3,
+    "total_files": 12,
+    "total_folders": 2,
     "bug_files": 0,
-    "clean_files": 11,
+    "clean_files": 12,
     "total_issues": 0,
     "by_severity": {
       "error": 0,

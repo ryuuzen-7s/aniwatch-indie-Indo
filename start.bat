@@ -9,7 +9,7 @@ echo.
 
 :: 1. Server
 echo [1/3] Starting Server...
-start "AniWatch Server" cmd /k "cd /d %~dp0 && uvicorn main:app --host 0.0.0.0 --port 8000 --log-level warning"
+start "AniWatch Server" cmd /k "cd /a %~dp0 && uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info"
 
 timeout /t 5 /nobreak >nul
 

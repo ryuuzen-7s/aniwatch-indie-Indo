@@ -2,25 +2,33 @@
 #  ANIWATCH — GITIGNORE
 # ═══════════════════════════════════════════════════════════
 
+# ─── Catatan Pribadi (JANGAN di-push) ───
+note.md
+notes/
+*.local.md
+
 # ─── Environment (JANGAN di-commit) ───
 .env
 .env.local
 .env.*.local
 *.env
+agent/.env
 
-# ─── Database (JANGAN di-commit — besar & berisi data) ───
+# ─── Database (Besar & berisi data lokal) ───
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
 data/db/
 data/cache/
+agent/state.json
 
 # ─── Logs ───
 *.log
 logs/
 data/log/
 agent/logs/
+agent/logs/*.log.*
 
 # ─── Python ───
 __pycache__/
@@ -55,7 +63,7 @@ ENV/
 env.bak/
 venv.bak/
 
-# ─── PyTest ───
+# ─── PyTest & Coverage ───
 .pytest_cache/
 .coverage
 htmlcov/
@@ -63,7 +71,7 @@ htmlcov/
 .nox/
 .hypothesis/
 
-# ─── IDE ───
+# ─── IDE & Editor ───
 .vscode/
 .idea/
 *.swp
@@ -78,7 +86,7 @@ Thumbs.db
 desktop.ini
 $RECYCLE.BIN/
 
-# ─── Project Specific ───
+# ─── Project Specific (Data Scraping) ───
 data/base/dump/
 data/base/slugs/
 data/debug/
@@ -86,6 +94,7 @@ debug_output/
 tmp/
 bin/
 backup/
+agent/state.json
 
 # ─── ZROK ───
 .zrok/
@@ -101,9 +110,10 @@ package-lock.json
 # ─── Test outputs ───
 test/fixtures/*.html
 !test/fixtures/sample_anime.json
-# ─── Tunnel Tools ───
-zrok.exe
-# ─── MD file ───
-MD/tmp/
-# ─── Miscellaneous ───
-*.bak
+
+# ─── Software Build Artifacts ───
+*.o
+*.obj
+*.so
+*.exe
+*.dll

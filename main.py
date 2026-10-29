@@ -36,8 +36,7 @@ from api.routes import (
 )
 from api.middleware import RateLimitMiddleware, MethodRestrictorMiddleware
 from security.deps import require_auth
-
-
+from fastapi.middleware.gzip import GZipMiddleware
 
 
 
@@ -107,7 +106,7 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
-
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # Compress response > 500 bytes
 
 # ═══════════════════════════════════════════════════════════
 #  MIDDLEWARE

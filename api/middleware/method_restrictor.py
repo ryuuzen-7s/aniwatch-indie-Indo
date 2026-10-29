@@ -1,25 +1,16 @@
 """
 api/middleware/method_restrictor.py — Middleware pembatas HTTP method.
-
-Hanya GET & POST yang diizinkan (default).
-OPTIONS & HEAD selalu lolos (CORS preflight, health check).
-Path di `excluded_paths` dilewati (mis. /keys untuk DELETE).
-
-Error response otomatis di-format oleh handler
-`StarletteHTTPException` di `api/exceptions.py`.
 """
 import logging
 from typing import Iterable, Set
 
-from fastapi import HTTPException, status
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-
 
 logger = logging.getLogger(__name__)
 
 
-# ─── Default (bisa di-override lewat .env) ───
 DEFAULT_ALLOWED: Set[str] = {"GET", "POST"}
 DEFAULT_EXCLUDED: tuple[str, ...] = (
     "/keys",          # DELETE /keys/{id} (portal)
@@ -33,18 +24,6 @@ ALWAYS_ALLOWED: Set[str] = {"OPTIONS", "HEAD"}
 
 
 class MethodRestrictorMiddleware(BaseHTTPMiddleware):
-    """
-    Batasi HTTP method ke `allowed_methods` untuk semua request,
-    kecuali path di `excluded_paths`.
-
-    Usage:
-        app.add_middleware(
-            MethodRestrictorMiddleware,
-            allowed_methods={"GET", "POST"},
-            excluded_paths=("/keys",),
-        )
-    """
-
     def __init__(
         self,
         app,
@@ -65,7 +44,6 @@ class MethodRestrictorMiddleware(BaseHTTPMiddleware):
         )
 
     def _is_excluded(self, path: str) -> bool:
-        """Cek apakah path dikecualikan (prefix match)."""
         return any(path.startswith(p) for p in self.excluded_paths)
 
     async def dispatch(self, request: Request, call_next):
@@ -80,7 +58,7 @@ class MethodRestrictorMiddleware(BaseHTTPMiddleware):
         if self._is_excluded(path):
             return await call_next(request)
 
-        # 2. OPTIONS & HEAD selalu lolos
+        # 2. OPTIONS & HEAD selalu lolos (CORS preflight & health check)
         if method in ALWAYS_ALLOWED:
             return await call_next(request)
 
@@ -90,15 +68,26 @@ class MethodRestrictorMiddleware(BaseHTTPMiddleware):
                 f"[MethodRestrictor] Tolak {method} {path} "
                 f"(allowed: {sorted(self.allowed_methods)})"
             )
-            raise HTTPException(
+            
+            # ⚠️ GUNAKAN JSONResponse, JANGAN raise HTTPException
+            return JSONResponse(
                 status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-                detail=(
-                    f"Method {method} tidak diizinkan pada endpoint ini. "
-                    f"Hanya {sorted(self.allowed_methods)} yang diperbolehkan."
-                ),
+                content={
+                    "success": False,
+                    "data": None,
+                    "error": {
+                        "code": "HTTP_405",
+                        "message": (
+                            f"Method {method} tidak diizinkan pada endpoint ini. "
+                            f"Hanya {sorted(self.allowed_methods)} yang diperbolehkan."
+                        ),
+                        "status": 405,
+                        "details": {}
+                    }
+                },
                 headers={
                     "Allow": ", ".join(sorted(self.allowed_methods)),
-                },
+                }
             )
 
         # 4. Lanjut

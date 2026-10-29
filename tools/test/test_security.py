@@ -1,6 +1,14 @@
 """Test auth & rate limit."""
 import time
 import pytest
+from security.rate_limit import reset_all_rate_limits
+
+# Fixture untuk mereset rate limit sebelum dan sesudah test
+@pytest.fixture(autouse=True)
+def reset_rate_limit():
+    reset_all_rate_limits()
+    yield
+    reset_all_rate_limits()
 
 
 def test_register_success(client):
@@ -39,7 +47,7 @@ def test_login_success(client):
 def test_login_wrong_password(client):
     r = client.post("/login", json={
         "username": "nonexistent_user_xyz",
-        "password": "wrong",
+        "password": "wrongpassword123", # <-- Diperbaiki: min 6 karakter
     })
     assert r.status_code == 401
 
@@ -61,7 +69,10 @@ def test_me_anonymous(client):
 
 def test_me_with_api_key(client):
     r = client.post("/get-key", json={"name": "test-key-2"})
+    # Cek dulu apakah request berhasil
+    assert r.status_code == 200 
     api_key = r.json()["data"]["key"]
+    
     r = client.get("/me", headers={"X-API-Key": api_key})
     assert r.status_code == 200
     assert r.json()["data"]["authenticated"] is True
