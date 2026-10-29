@@ -3,10 +3,10 @@ name: Auto Release & Changelog
 on:
   push:
     tags:
-      - 'v*' # Hanya berjalan jika push tag berawalan 'v' (contoh: v1.2.0)
+      - 'v*' 
 
 permissions:
-  contents: write # Diperlukan agar bot bisa membuat Release
+  contents: write
 
 jobs:
   build:
@@ -16,11 +16,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # ─── BAGIAN INI YANG MENARIK CHANGELOG ───
       - name: Get Changelog Body
         id: changelog
         run: |
-          # Mengambil isi CHANGELOG.md, membuang baris kosong di awal/akhir
-          # Kamu bisa memodifikasi ini jika ingin memotong teks tertentu
+          # Mengambil isi MD/CHANGELOG.md
           CHANGELOG=$(cat MD/CHANGELOG.md)
           echo "body<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
@@ -29,7 +29,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }} # Menggunakan nama tag (v1.2.0)
+          name: Release ${{ github.ref_name }}
+          # Memasukkan changelog ke deskripsi
           body: ${{ steps.changelog.outputs.body }}
           draft: false
           prerelease: false
