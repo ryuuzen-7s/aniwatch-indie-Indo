@@ -21,34 +21,35 @@ echo.
 echo  DATABASE
 echo    [1]  db_monitor        - Monitor DB ^& query
 echo    [2]  add_pass          - Manage API key + user
+echo    [3]  data_edit         - Edit database (manual)
 echo.
 echo  ANALYZER
-echo    [3]  analyzer_slug     - Analisa slug JSON
-echo    [4]  analyzer_genre    - Analisa genre JSON
-echo    [5]  convert_flat      - Konversi JSON nested -^> flat
-echo    [6]  get_slug          - Extract slug dari slug_by_genre.json
+echo    [4]  analyzer_slug     - Analisa slug JSON
+echo    [5]  analyzer_genre    - Analisa genre JSON
+echo    [6]  convert_flat      - Konversi JSON nested -^> flat
+echo    [7]  get_slug          - Extract slug dari slug_by_genre.json
 echo.
 echo  DEBUG
-echo    [7]  scanner           - Scan bug semua file
-echo    [8]  debug             - Debug parser ^& data flow
+echo    [8]  scanner           - Scan bug semua file
+echo    [9]  debug             - Debug parser ^& data flow
 echo.
 echo  SCRAPER
-echo    [9]  scraper_update    - Scrape anime terbaru (on-going)
-echo   [10]  scrape_genre      - Scrape anime by genre
-echo   [11]  scrape_env        - Scrape dari daftar .env (agent)
+echo    [10]  scraper_update    - Scrape anime terbaru (on-going)
+echo   [11]  scrape_genre      - Scrape anime by genre
+echo   [12]  scrape_env        - Scrape dari daftar .env (agent)
 echo.
 echo  MANAGE
-echo   [12]  add_env           - Edit .env dari JSON
-echo   [13]  filter            - Filter file sampah -^> bin/
-echo   [14]  cleaner           - Bersihkan bin/ ^& backup/
-echo   [15]  auto_slug         - Auto update slug ke agent/.env
+echo   [13]  add_env           - Edit .env dari JSON
+echo   [14]  filter            - Filter file sampah -^> bin/
+echo   [15]  cleaner           - Bersihkan bin/ ^& backup/
+echo   [16]  auto_slug         - Auto update slug ke agent/.env
 echo.
 echo  TEST
-echo   [16]  test              - Test suite (pytest)
-echo   [17]  verify_405        - Verifikasi method restrictor
+echo   [17]  test              - Test suite (pytest)
+echo   [18]  verify_405        - Verifikasi method restrictor
 echo.
 echo  INFO
-echo   [18]  help              - Bantuan
+echo   [19]  help              - Bantuan
 echo.
 echo    [0]  Keluar
 echo.
@@ -57,22 +58,23 @@ set /p choice="  Pilih: "
 
 if "%choice%"=="1"  goto :db_monitor
 if "%choice%"=="2"  goto :add_pass
-if "%choice%"=="3"  goto :analyzer_slug
-if "%choice%"=="4"  goto :analyzer_genre
-if "%choice%"=="5"  goto :convert_flat
-if "%choice%"=="6"  goto :get_slug
-if "%choice%"=="7"  goto :scanner
-if "%choice%"=="8"  goto :debug
-if "%choice%"=="9"  goto :scraper_update
-if "%choice%"=="10" goto :scrape_genre
-if "%choice%"=="11" goto :scrape_env
-if "%choice%"=="12" goto :add_env
-if "%choice%"=="13" goto :filter
-if "%choice%"=="14" goto :cleaner
-if "%choice%"=="15" goto :auto_slug
-if "%choice%"=="16" goto :test
-if "%choice%"=="17" goto :verify_405
-if "%choice%"=="18" goto :help
+if "%choice%"=="3"  goto :data_edit
+if "%choice%"=="4"  goto :analyzer_slug
+if "%choice%"=="5"  goto :analyzer_genre
+if "%choice%"=="6"  goto :convert_flat
+if "%choice%"=="7"  goto :get_slug
+if "%choice%"=="8"  goto :scanner
+if "%choice%"=="9"  goto :debug
+if "%choice%"=="10" goto :scraper_update
+if "%choice%"=="11" goto :scrape_genre
+if "%choice%"=="12" goto :scrape_env
+if "%choice%"=="13" goto :add_env
+if "%choice%"=="14" goto :filter
+if "%choice%"=="15" goto :cleaner
+if "%choice%"=="16" goto :auto_slug
+if "%choice%"=="17" goto :test
+if "%choice%"=="18" goto :verify_405
+if "%choice%"=="19" goto :help
 if "%choice%"=="0"  goto :end
 
 echo.
@@ -91,6 +93,11 @@ goto :menu
 :add_pass
 cls
 call :run_python tools\add_pass.py
+goto :menu
+
+:data_edit
+cls
+call :run_python tools\edit_anime.py
 goto :menu
 
 :: ═══════════════════════════════════════════════════════════

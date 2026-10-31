@@ -1,10 +1,10 @@
 # 🎌 AniWatch API
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Anicorporation.img-green.svg)](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/LICENSE.md)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
 
-> **Update Terbaru (v1.3.0)**: Pemisahan Endpoint Jadwal Harian (`/share/day/{hari}`) dan optimalisasi memori dengan GZip Compression & Pagination (max 10 data). [Baca Changelog Lengkap](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/CHANGELOG.md).
+> **Update Terbaru (v1.4.0)**: Penambahan **Jadwal Harian**, optimasi **Pagination (max 10 item)**, **GZip Compression**, dan **Tool Edit Data Anime by ID** untuk mempermudah *maintenance*.
 
 ---
 
@@ -14,10 +14,11 @@
 - 🔒 **API Key Required** — Endpoint `/share/*` butuh API key (`X-API-Key`).
 - 🚦 **Rate Limit** — Per API key, session, atau IP.
 - ⚡ **Cache 2-Tier** — Memory + file (persistent).
-- 🚫 **Method Restriction** — Hanya `GET` & `POST`.
+- 🚫 **Method Restriction** — Hanya `GET` & `POST` (selain endpoint khusus).
 - 🤖 **Auto Agent** — Scrape anime kosong di background.
 - 📅 **Jadwal Harian** — Filter anime berdasarkan hari tayang.
-- 🛡️ **Pagination** — Maksimal 10 item per halaman untuk optimasi client.
+- 🛡️ **Pagination & GZip** — Maksimal 10 item per halaman untuk menghemat memori client.
+- 🛠️ **CLI Tools** — Manajemen database, API Key, dan edit data manual.
 
 ---
 
@@ -33,19 +34,26 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-### 3. Jalankan Server
+### 3. Jalankan Server (3 Mode)
+Kamu bisa menjalankan semuanya sekaligus menggunakan satu klik:
+```bash
+start.bat
+```
+*(Akan membuka 3 terminal: API Server, ZROK Tunnel, dan Agent Scraper).*
+
+Atau jalankan manual:
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level warning
 ```
 
-### 4. Buka Dokumentasi
+### 4. Akses Layanan
 - **Portal**: `http://localhost:8000/portal`
 - **Docs (Swagger)**: `http://localhost:8000/docs`
 - **Monitoring**: `http://localhost:8000/monitor`
 
 ---
 
-## 📡 API Endpoints (v1.3.0)
+## 📡 API Endpoints (v1.4.0)
 
 ### 🔓 Publik (Tanpa API Key)
 | Method | Endpoint | Deskripsi |
@@ -67,6 +75,23 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level warning
 
 ---
 
+## 🛠️ CLI Tools (Manual)
+
+Kamu bisa mengakses menu interaktif dengan menjalankan:
+```bash
+tools.bat
+```
+
+**Fitur Tools:**
+- **[1] DB Monitor** — Cek isi database.
+- **[2] Add Pass** — Buat/kelola API Key.
+- **[3] Data Edit** — Edit data anime di database (Judul, Hari Tayang, dll) berdasarkan ID.
+- **[4-7] Analyzer** — Analisa JSON slug & genre.
+- **[10] Scraper Update** — Scrape anime on-going.
+- **[17] Test Suite** — Jalankan pytest.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Framework**: FastAPI
@@ -74,6 +99,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level warning
 - **Validation**: Pydantic v2
 - **HTTP Client**: requests + tenacity
 - **HTML Parser**: BeautifulSoup + lxml
+- **Compression**: GZipMiddleware
 
 ---
 

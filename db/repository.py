@@ -369,6 +369,7 @@ def save_scrape_result(result: Dict[str, Any]) -> Dict[str, int]:
                 "rating": meta.get("rating"),
                 "genres": meta.get("genres") or [],
                 "info": meta.get("info") or {},
+                "broadcast_day": meta.get("broadcast_day") or {},
             }
             anime = AnimeRepository.upsert(session, anime_data)
             counters["anime"] = 1

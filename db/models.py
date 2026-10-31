@@ -55,9 +55,16 @@ class Anime(Base):
     total_episode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
+    #Broadcast
+    broadcast_day: Mapped[str] = mapped_column(String(20), default="")  
+    total_episode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
     # JSON
     genres: Mapped[list] = mapped_column(JSON, default=list)
     info: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
 
     # Timestamps
     scraped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

@@ -113,7 +113,7 @@ class Settings(BaseSettings):
 
     # APP
     app_name: str = "AniWatch API"
-    app_version: str = "1.0.0"
+    app_version: str = "1.4.0"
     debug: bool = False
     log_level: str = "INFO"
 
