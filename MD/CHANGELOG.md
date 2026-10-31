@@ -6,7 +6,14 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/),
 versi mengikuti [Semantic Versioning](https://semver.org/).
 
 ---
+## [1.4.1] — 2026-10-31 — Perbaikan Masalah Database
+### 📖 Isu masalah
+  Ada nya Masalah Sinkronisasi database sehingga data menjadi tidak beraturan serta API respose mengembalikan 200 yang kosong tanpa data
 
+### 🔧 Perbaikan
+ - **`db\models.py`** — adanya kesalahan penulisan sehingga terjadi penyimpangan antara data dan database dan sudah diperbaiki
+ - **`db\repository.py`** — Ada nya perubahan struktur data sehingga rusak atau tidak sinkron dan sudah diperbaiki
+  
 ## [1.4.0] — 2026-10-31 — Manual Data Editor & Sinkronisasi
 
 ### 🎯 Added — Tool Edit Data (CLI)
@@ -107,7 +114,7 @@ Format: `MAJOR.MINOR.PATCH`
 ---
 
 **Terakhir diupdate:** 2026-10-31
-**Versi saat ini:** 1.4.0
+**Versi saat ini:** 1.4.1
 **Status:** ✅ Stable
 
 ```

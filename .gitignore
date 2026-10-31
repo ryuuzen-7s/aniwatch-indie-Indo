@@ -7,6 +7,15 @@ note.md
 notes/
 *.local.md
 
+# Abaikan note & notes di dalam folder MD/ (atau subfolder mana pun)
+MD/note
+MD/notes
+MD/note.md
+MD/notes/
+**/note.md
+**/notes/
+**/note/
+
 # ─── Environment (JANGAN di-commit) ───
 .env
 .env.local
@@ -110,10 +119,3 @@ package-lock.json
 # ─── Test outputs ───
 test/fixtures/*.html
 !test/fixtures/sample_anime.json
-
-# ─── Software Build Artifacts ───
-*.o
-*.obj
-*.so
-*.exe
-*.dll

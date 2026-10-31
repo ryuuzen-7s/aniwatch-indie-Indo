@@ -57,8 +57,6 @@ class Anime(Base):
 
     #Broadcast
     broadcast_day: Mapped[str] = mapped_column(String(20), default="")  
-    total_episode: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # JSON
     genres: Mapped[list] = mapped_column(JSON, default=list)
