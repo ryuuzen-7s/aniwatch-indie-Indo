@@ -101,5 +101,5 @@ async def redirect_to_github():
     Status: 302 Found
     """
     # Ganti URL di bawah ini dengan URL GitHub kamu
-    github_url = "https://github.com/AnikuzeRyuuzen" 
+    github_url = "https://github.com/ryuuzen-7s/aniwatch-indie-Indo" 
     return RedirectResponse(url=github_url, status_code=302)

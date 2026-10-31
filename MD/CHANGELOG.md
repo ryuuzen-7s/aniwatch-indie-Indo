@@ -6,6 +6,26 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/),
 versi mengikuti [Semantic Versioning](https://semver.org/).
 
 ---
+## [1.3.0] — 2026-10-31 — Jadwal Harian & Sinkronisasi Data
+
+### 🎯 Added — Endpoint Jadwal Harian
+
+Menanggapi keluhan Client (Aestracorps.ITX) terkait ketidakmampuan melakukan sortir karena tidak adanya jadwal tayang:
+- **Endpoint Baru:** `GET /share/day/{hari}`.
+- Mendukung filter: `senin`, `selasa`, `rabu`, `kamis`, `jumat`, `sabtu`, `minggu`.
+- Mendukung Pagination (`?page=1&limit=10`).
+
+### 🔧 Changed
+
+- **`/share/now`** — Sekarang difokuskan hanya untuk **anime terbaru (update terakhir)**. Filter hari dihapus dari endpoint ini dan dipindah ke endpoint `/share/day/{hari}`.
+- **Database** — Menambahkan kolom `broadcast_day` pada tabel `anime`.
+- **Scraper Otakudesu** — Memperbarui parser untuk mengekstrak informasi jadwal tayang (`Jadwal`/`Hari`).
+- **`api/services/now_service.py`** — Memisahkan fungsi `get_now_ongoing` dan `get_anime_by_day`.
+
+### 📚 Docs
+
+- **`MD/usage.md`** — Update panduan penggunaan endpoint `/share/day/{hari}`.
+- **`README.md`** — Update daftar endpoint terbaru.
 
 ## [1.2.0] — 2026-10-29 — Pagination & Client Optimization
 
