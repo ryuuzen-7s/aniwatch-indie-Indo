@@ -2,7 +2,7 @@
 
 Panduan lengkap pakai AniWatch API dari JavaScript (Browser & Node.js).
 
-> **Version:** 1.3.0
+> **Version:** 1.4.1
 > **Base URL:** `https://aniwatch.share.zrok.io` (public) · `http://localhost:8000` (local)
 > **Method Restriction:** Hanya `GET` & `POST`
 
