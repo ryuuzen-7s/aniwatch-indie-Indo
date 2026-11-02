@@ -1,6 +1,6 @@
 # 🎌 AniWatch API
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Anicorporation.img-green.svg)](https://github.com/ryuuzen-7s/aniwatch-indie-Indo/blob/main/MD/LICENSE.md)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
 
