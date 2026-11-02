@@ -4,7 +4,7 @@
 > **Project:** AniWatch API
 > **Organization:** Anicorporation.img
 > **Developer:** Anikuze Ryuuzen
-> **Version:** 1.0.1
+> **Version:** 1.4.1
 > **Year:** ©2026
 
 ---
